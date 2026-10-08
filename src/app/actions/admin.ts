@@ -1,7 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
-import { and, eq, gte, ne } from "drizzle-orm";
+import { and, eq, gte, like, ne, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -9,6 +9,7 @@ import { requireRole } from "@/lib/auth";
 import { getSemester, setSetting } from "@/lib/data";
 import { getDb, schema } from "@/lib/db";
 import { addDays, utahToDate } from "@/lib/dates";
+import { PLACEHOLDER_EMAIL_DOMAIN } from "@/lib/config";
 import { syncOutlook } from "@/lib/outlook";
 
 export type FormState = { error?: string; ok?: string };
@@ -220,6 +221,14 @@ export async function savePerson(_prev: FormState, form: FormData): Promise<Form
   return { ok: v.id ? "Saved" : `Added ${v.name}` };
 }
 
+export async function setPersonTeam(userId: string, teamId: string | null): Promise<FormState> {
+  await requireRole("admin");
+  const db = await getDb();
+  await db.update(schema.users).set({ teamId }).where(eq(schema.users.id, userId));
+  refresh();
+  return { ok: "Saved" };
+}
+
 /** CSV columns: name, email, role (ambassador/manager/admin), team */
 export async function importPeople(rows: Record<string, string>[]): Promise<ImportResult> {
   await requireRole("admin");
@@ -253,12 +262,19 @@ export async function importPeople(rows: Record<string, string>[]): Promise<Impo
         teamId = t.id;
       }
     }
-    const existing = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, email));
+    let existing = await db.select({ id: schema.users.id }).from(schema.users).where(eq(schema.users.email, email));
+    if (!existing.length) {
+      // People loaded from SignUpGenius have a placeholder email; fill in the real one by name instead of duplicating them
+      existing = await db
+        .select({ id: schema.users.id })
+        .from(schema.users)
+        .where(and(sql`lower(${schema.users.name}) = ${r.name.toLowerCase()}`, like(schema.users.email, `%${PLACEHOLDER_EMAIL_DOMAIN}`)));
+    }
     if (existing.length) {
       // Only change what the CSV actually fills in — a blank role or team never demotes or un-assigns anyone
       await db
         .update(schema.users)
-        .set({ name: r.name, ...(role ? { role } : {}), ...(teamId ? { teamId } : {}) })
+        .set({ name: r.name, email, ...(role ? { role } : {}), ...(teamId ? { teamId } : {}) })
         .where(eq(schema.users.id, existing[0].id));
     } else {
       await db.insert(schema.users).values({

@@ -1,5 +1,23 @@
 import { Bar, StatusPill, cx } from "./ui";
-import type { Reqs, Status, Tally } from "@/lib/progress";
+import { needsSentence, type Reqs, type Status, type Tally } from "@/lib/progress";
+
+/** "Still need 4 events and 1 high school visit" — or what's left once everything is covered */
+export function NeedsLine({ tally, reqs, status, className }: { tally: Tally; reqs: Reqs; status: Status; className?: string }) {
+  const needs = needsSentence(tally, reqs);
+  return (
+    <p className={cx("text-[14px] leading-snug", needs ? "text-ink-2" : "text-good", className)}>
+      {needs ? (
+        <>
+          Still need <b className="font-semibold text-ink">{needs}</b>
+        </>
+      ) : status === "complete" ? (
+        "All done this semester"
+      ) : (
+        "You're signed up for everything you need"
+      )}
+    </p>
+  );
+}
 
 const ROWS = [
   { key: "tour", label: "Tours", color: "var(--color-tour)" },
@@ -46,7 +64,8 @@ export function ProgressCard({
           );
         })}
       </div>
-      <div className="mt-4 flex items-center gap-4 text-xs text-muted">
+      <NeedsLine tally={tally} reqs={reqs} status={status} className="mt-4 rounded-xl bg-canvas px-3 py-2.5" />
+      <div className="mt-3 flex items-center gap-4 text-xs text-muted">
         <span className="flex items-center gap-1.5">
           <span className="h-2 w-3.5 rounded-full bg-ink-2" /> Done
         </span>
@@ -79,7 +98,8 @@ export function ProgressStrip({ tally, reqs, status }: { tally: Tally; reqs: Req
           );
         })}
       </div>
-      <div className="mt-2.5 flex justify-center">
+      <div className="mt-3 flex items-center justify-between gap-3 border-t border-line pt-2.5">
+        <NeedsLine tally={tally} reqs={reqs} status={status} />
         <StatusPill status={status} />
       </div>
     </div>

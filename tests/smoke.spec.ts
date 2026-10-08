@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
 async function demoLogin(page: Page, role: "Ambassador" | "Manager" | "Admin") {
   await page.goto("/login");
   await page.getByRole("button", { name: role }).click();
-  await page.waitForURL("**/calendar");
+  await page.waitForURL("**/signup");
 }
 
 function outlookFixture() {
@@ -62,18 +62,35 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await expect(page.getByText("That code didn't work")).toBeVisible();
   await page.fill("input[name=code]", code);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/calendar");
+  await page.waitForURL("**/signup");
 
-  // one-tap sign up from the list
+  // Sign up page: what I still need, open spots only, one tap to join (the row stays and says "You're in")
+  await expect(page.getByText("Still need").first()).toBeVisible();
+  const openBefore = await page.getByRole("button", { name: "Sign up", exact: true }).count();
+  expect(openBefore).toBeGreaterThan(0);
+  await page.getByRole("button", { name: "Sign up", exact: true }).first().click();
+  await expect(page.getByText("You're signed up. It's in My shifts.")).toBeVisible();
+  await expect(page.getByText("You're in").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Sign up", exact: true })).toHaveCount(openBefore - 1);
+  // type filter
+  await page.getByRole("button", { name: /^Tours/ }).click();
+  await expect(page.locator("main").getByText("Event", { exact: true })).toHaveCount(0);
+
+  // one-tap sign up from the calendar list
+  await page.goto("/calendar");
   await page.getByRole("button", { name: "List", exact: true }).click();
-  await page.getByRole("button", { name: "Sign up" }).first().click();
+  await page.getByRole("button", { name: "Sign up", exact: true }).first().click();
   await expect(page.getByText("You're signed up").first()).toBeVisible();
 
   // "Mine" shows only my things
   await page.getByRole("button", { name: "Mine", exact: true }).click();
   await expect(page.getByRole("button", { name: "Sign up" })).toHaveCount(0);
   await page.locator("button:has(span.block)").first().click();
-  await expect(page.getByRole("dialog").getByRole("button", { name: "Drop" })).toBeVisible();
+  // dropping from the panel asks first
+  await page.getByRole("dialog").getByRole("button", { name: "Drop" }).click();
+  await expect(page.getByText("Drop this shift?")).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Keep" }).click();
+  await expect(page.getByRole("dialog").getByText("You're signed up")).toBeVisible();
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "All", exact: true }).click();
 
@@ -82,7 +99,7 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   const before = await page.getByRole("button", { name: "Drop" }).count();
   await page.getByRole("button", { name: "Drop" }).first().click();
   await page.getByRole("button", { name: "Drop" }).first().click();
-  await expect(page.getByText("Removed")).toBeVisible();
+  await expect(page.getByText("Dropped")).toBeVisible();
   await expect(page.getByRole("button", { name: "Drop" })).toHaveCount(before - 1);
 
   // personal calendar feed
@@ -92,7 +109,10 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
 
   // no admin access
   await page.goto("/admin");
-  await expect(page).toHaveURL(/\/calendar$/);
+  await expect(page).toHaveURL(/\/signup$/);
+  // ambassadors can't open person pages
+  await page.goto("/people/00000000-0000-0000-0000-000000000000");
+  await expect(page).toHaveURL(/\/signup$/);
   await ctx.close();
 
   // ---------- Manager: remind someone ----------
@@ -108,6 +128,13 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await expect(dlg.getByText("You still need")).toBeVisible();
   await dlg.getByRole("button", { name: /^Send to/ }).click();
   await expect(page.getByText(/Reminder sent to \d/)).toBeVisible();
+  // manager can open someone on their team
+  await page.locator("table a[href^='/people/']").first().click();
+  await expect(page.getByRole("heading", { name: "Coming up" })).toBeVisible();
+  await expect(page.getByRole("main").getByRole("link", { name: "My team" })).toBeVisible();
+  // ...but nobody outside their team
+  await page.goto("/people/00000000-0000-0000-0000-000000000000");
+  await expect(page.getByText("404")).toBeVisible();
   await ctx.close();
 
   // ---------- Admin ----------
@@ -117,6 +144,17 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await demoLogin(page, "Admin");
   await page.goto("/admin");
   await expect(page.getByText("Ambassadors", { exact: true })).toBeVisible();
+
+  // person page from the overview
+  await page.locator("table a[href^='/people/']").first().click();
+  await expect(page.getByRole("heading", { name: "Done this semester" })).toBeVisible();
+
+  // move someone to another team right from the People list
+  await page.goto("/admin/people");
+  const teamSelect = page.getByRole("combobox", { name: /^Team for / }).first();
+  const firstTeam = await teamSelect.locator("option").nth(1).textContent();
+  await teamSelect.selectOption({ index: 1 });
+  await expect(page.getByText(`Moved to ${firstTeam}`)).toBeVisible();
 
   // repeat weekly
   const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);

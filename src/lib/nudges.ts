@@ -9,7 +9,7 @@ export async function buildNudges(userIds: string[], note: string, sentById?: st
   const semester = await getSemester();
   const reqs = reqsOf(semester);
   const people = await getProgress({ userIds });
-  const link = `${await baseUrl()}/calendar?show=open`;
+  const link = `${await baseUrl()}/signup`;
   const mails: Mail[] = [];
   let skipped = 0;
   for (const p of people) {

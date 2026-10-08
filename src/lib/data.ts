@@ -58,11 +58,11 @@ export type CalEvent = {
   people: { id: string; name: string; status: "going" | "no_show" }[];
 };
 
-/** Everything on the calendar from 2 weeks before the semester to 2 months after. */
+/** Everything on the calendar from 2 weeks before the semester through the next semester (8 months after). */
 export async function getCalendarEvents(s: Semester): Promise<CalEvent[]> {
   const db = await getDb();
   const from = utahToDate(addDays(s.startsOn, -14));
-  const to = utahToDate(addDays(s.endsOn, 60));
+  const to = utahToDate(addDays(s.endsOn, 240));
   const rows = await db
     .select()
     .from(schema.events)

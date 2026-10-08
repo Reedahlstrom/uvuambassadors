@@ -30,8 +30,14 @@ export default async function TeamPage() {
   return (
     <div>
       <PageTitle>{teams.map((t) => t.name).join(" & ")}</PageTitle>
-      <StatTiles people={people} />
-      <PeopleTable people={people} reqs={reqs} canRemind />
+      {people.length === 0 ? (
+        <Empty>No one is on your team yet. An admin can add people.</Empty>
+      ) : (
+        <>
+          <StatTiles people={people} />
+          <PeopleTable people={people} reqs={reqs} canRemind />
+        </>
+      )}
     </div>
   );
 }

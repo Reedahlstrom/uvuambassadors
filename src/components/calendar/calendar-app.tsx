@@ -87,13 +87,7 @@ export function CalendarApp({
   );
   const byDay = useMemo(() => groupByDay(visible), [visible]);
 
-  const myProgress = useMemo(() => {
-    const mine = events
-      .filter((e) => isMine(e, me) && dayKey(e.startsAt) >= semester.startsOn && dayKey(e.startsAt) <= semester.endsOn)
-      .map((e) => ({ type: e.type, withAc: e.withAc, endsAt: e.endsAt, status: e.people.find((p) => p.id === me)!.status }));
-    const t = tally(mine);
-    return { tally: t, status: statusOf(t, reqs, semesterElapsed(semester.startsOn, semester.endsOn)) };
-  }, [events, me, semester, reqs]);
+  const myProgress = useMyProgress(events, me, semester, reqs);
 
   const selected = selectedId ? events.find((e) => e.id === selectedId) : null;
   const showProgress = role === "ambassador";
@@ -182,13 +176,19 @@ export function CalendarApp({
               mobileDay={mobileDay}
               setMobileDay={setMobileDay}
             />
+            <Legend />
             <div className="mt-4 md:hidden">
               <DayGroup day={mobileDay} today={today} events={byDay.get(mobileDay) ?? []} me={me} now={now} onSelect={setSelectedId} showEmpty />
             </div>
           </>
         )}
 
-        {prefs.view === "week" && <WeekView weekStart={weekStart} today={today} byDay={byDay} me={me} now={now} onSelect={setSelectedId} />}
+        {prefs.view === "week" && (
+          <>
+            <WeekView weekStart={weekStart} today={today} byDay={byDay} me={me} now={now} onSelect={setSelectedId} />
+            <Legend />
+          </>
+        )}
 
         {prefs.view === "list" && <ListView today={today} byDay={byDay} me={me} now={now} onSelect={setSelectedId} />}
       </section>
@@ -211,6 +211,16 @@ export function CalendarApp({
       )}
     </div>
   );
+}
+
+export function useMyProgress(events: CalEvent[], me: string, semester: { startsOn: string; endsOn: string }, reqs: Reqs) {
+  return useMemo(() => {
+    const mine = events
+      .filter((e) => isMine(e, me) && dayKey(e.startsAt) >= semester.startsOn && dayKey(e.startsAt) <= semester.endsOn)
+      .map((e) => ({ type: e.type, withAc: e.withAc, endsAt: e.endsAt, status: e.people.find((p) => p.id === me)!.status }));
+    const t = tally(mine);
+    return { tally: t, status: statusOf(t, reqs, semesterElapsed(semester.startsOn, semester.endsOn)) };
+  }, [events, me, semester, reqs]);
 }
 
 function weekTitle(start: string) {
@@ -295,6 +305,25 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
   );
 }
 
+function Legend() {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 px-1 text-[13px] text-muted">
+      <span className="flex items-center gap-1.5">
+        <span className="flex h-4 w-4 items-center justify-center rounded bg-brand text-white">
+          <Check size={11} strokeWidth={3} />
+        </span>
+        You&apos;re in
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full bg-brand" /> Open, tap to sign up
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-2 rounded-full border border-faint" /> Full
+      </span>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Month
 // ---------------------------------------------------------------------------
@@ -365,6 +394,8 @@ function MonthGrid({
                   {list.slice(0, 4).map((e) =>
                     isMine(e, me) ? (
                       <Check key={e.id} size={12} strokeWidth={3.5} style={{ color: typeMeta(e.type).color }} />
+                    ) : takesSignups(e) && spotsLeft(e) === 0 ? (
+                      <span key={e.id} className="h-1.5 w-1.5 rounded-full border border-faint" />
                     ) : (
                       <span key={e.id} className="h-1.5 w-1.5 rounded-full" style={{ background: typeMeta(e.type).color }} />
                     ),
@@ -414,23 +445,33 @@ function Chip({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; o
   const mine = isMine(e, me);
   const full = takesSignups(e) && spotsLeft(e) === 0 && !mine;
   const past = isPast(e, now);
+  const muted = full || (past && !mine);
+  const status = mine ? "You're in" : past ? "" : full ? "Full" : takesSignups(e) ? `${spotsLeft(e)} open` : "";
   return (
     <button
       onClick={onClick}
-      title={`${e.allDay ? "" : timeShort(e.startsAt) + " "}${e.title}`}
+      title={`${e.allDay ? "" : timeShort(e.startsAt) + " "}${e.title}${status ? ` · ${status}` : ""}`}
       className={cx(
         "flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-[3px] text-left text-[12.5px] leading-tight transition hover:brightness-95",
-        past && !mine ? "opacity-50" : full && "opacity-70",
+        past && !mine && "opacity-60",
       )}
       style={
         mine
           ? { background: meta.color, color: "white" }
-          : { background: `color-mix(in srgb, ${meta.color} 10%, white)`, color: "var(--color-ink)" }
+          : muted
+            ? { background: "var(--color-canvas)", color: "var(--color-muted)" }
+            : { background: `color-mix(in srgb, ${meta.color} 12%, white)`, color: "var(--color-ink)" }
       }
     >
-      {mine ? <Check size={12} strokeWidth={3} className="shrink-0" /> : <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: meta.color }} />}
+      {mine ? (
+        <Check size={12} strokeWidth={3} className="shrink-0" />
+      ) : muted ? (
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full border border-faint" />
+      ) : (
+        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: meta.color }} />
+      )}
       {!e.allDay && <span className={cx("shrink-0 tabular-nums", mine ? "text-white/85" : "text-muted")}>{timeShort(e.startsAt)}</span>}
-      <span className="truncate font-medium">{e.title}</span>
+      <span className={cx("truncate", !muted && "font-medium")}>{e.title}</span>
     </button>
   );
 }
@@ -555,7 +596,7 @@ function dayLabel(day: string, today: string) {
   return dateShort(day + "T18:00:00Z");
 }
 
-function DayGroup({
+export function DayGroup({
   day,
   today,
   events,
@@ -593,7 +634,7 @@ function DayGroup({
   );
 }
 
-function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; onClick: () => void }) {
+export function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; onClick: () => void }) {
   const meta = typeMeta(e.type);
   const mine = isMine(e, me);
   const past = isPast(e, now);
@@ -617,10 +658,15 @@ function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now: numbe
           )}
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-[15px] font-semibold text-ink">{e.title}</span>
+          <span className="line-clamp-2 block text-[15px] leading-snug font-semibold text-ink sm:truncate">{e.title}</span>
           <span className="flex items-center gap-1.5 truncate text-[13px] text-muted">
             {meta.short}
             {e.withAc && <span className="font-medium text-hs">· With AC</span>}
+            {!mine && !past && takesSignups(e) && left > 0 && (
+              <span className="shrink-0 font-medium text-brand">
+                · {left} {left === 1 ? "spot" : "spots"} left
+              </span>
+            )}
             {e.location && e.location !== e.title && <span className="truncate">· {e.location}</span>}
           </span>
         </span>
@@ -646,7 +692,7 @@ function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now: numbe
 // Sheet (phone filters, "+N more")
 // ---------------------------------------------------------------------------
 
-function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);

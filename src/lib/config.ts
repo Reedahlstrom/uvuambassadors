@@ -26,3 +26,6 @@ export const DEMO_EMAILS = {
   manager: "ashley.jensen@example.com",
   admin: "admin@example.com",
 };
+
+// People imported from SignUpGenius before their real email is known (.invalid can never receive mail)
+export const PLACEHOLDER_EMAIL_DOMAIN = "@needs-email.invalid";

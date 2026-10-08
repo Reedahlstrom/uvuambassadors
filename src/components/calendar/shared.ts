@@ -20,10 +20,13 @@ export const takesSignups = (e: CalEvent) => e.spots != null;
 export const spotsLeft = (e: CalEvent) => (e.spots == null ? 0 : Math.max(0, e.spots - filled(e)));
 export const isOpen = (e: CalEvent, now: number) => takesSignups(e) && !isPast(e, now) && spotsLeft(e) > 0;
 
-/** Days (YYYY-MM-DD, Utah) an item appears on. Multi-day all-day items show on each day. */
+/**
+ * Days (YYYY-MM-DD, Utah) an item appears on. Multi-day all-day items show on each day,
+ * except sign-up items (e.g. "Social media · Week of 10/12") which show once, on their first day.
+ */
 export function daysOf(e: CalEvent): string[] {
   const start = dayKey(e.startsAt);
-  if (!e.allDay) return [start];
+  if (!e.allDay || e.spots != null) return [start];
   const end = dayKey(new Date(new Date(e.endsAt).getTime() - 1));
   const out: string[] = [];
   for (let d = start; d <= end && out.length < 31; d = addDays(d, 1)) out.push(d);

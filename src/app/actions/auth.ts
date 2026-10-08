@@ -22,7 +22,7 @@ async function findUser(email: string) {
 }
 
 function landingFor(user: { onboardedAt: Date | null }) {
-  return user.onboardedAt ? "/calendar" : "/welcome";
+  return user.onboardedAt ? "/signup" : "/welcome";
 }
 
 export async function requestLogin(_prev: LoginState, form: FormData): Promise<LoginState> {
@@ -73,7 +73,7 @@ export async function demoLogin(role: "ambassador" | "manager" | "admin") {
   const user = await findUser(DEMO_EMAILS[role]);
   if (!user) throw new Error("Demo user missing — run npm run db:seed");
   await startSession(user.id);
-  redirect("/calendar");
+  redirect("/signup");
 }
 
 export async function signOut() {

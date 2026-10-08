@@ -62,7 +62,7 @@ export default async function MyShiftsPage() {
             ) : (
               <Empty>
                 <p className="mb-4">You&apos;re not signed up for anything yet.</p>
-                <ButtonLink href="/calendar">Find something</ButtonLink>
+                <ButtonLink href="/signup">Find something to sign up for</ButtonLink>
               </Empty>
             )}
           </section>

@@ -13,7 +13,7 @@ export function useSignupActions() {
   const toast = useToast();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [, start] = useTransition();
-  const run = (id: string, fn: () => Promise<ActionResult>) => {
+  const run = (id: string, fn: () => Promise<ActionResult>, onDone?: () => void) => {
     setPendingId(id);
     start(async () => {
       try {
@@ -24,6 +24,7 @@ export function useSignupActions() {
         toast("Something went wrong. Try again.", "error");
       } finally {
         setPendingId(null);
+        onDone?.();
       }
     });
   };
@@ -51,6 +52,7 @@ export function EventPanel({
   const past = isPast(event, now);
   const left = spotsLeft(event);
   const busy = pendingId !== null;
+  const [confirmDrop, setConfirmDrop] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -112,22 +114,45 @@ export function EventPanel({
           {takesSignups(event) && (
             <div className="mt-6">
               {mine ? (
-                <div className="flex items-center gap-2">
-                  <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-good-soft font-medium text-good">
-                    <Check size={18} strokeWidth={2.5} /> {past ? "You were there" : "You're signed up"}
-                  </div>
-                  {!past && (
-                    <Button variant="outline" size="lg" className="h-12 px-5" disabled={busy} onClick={() => run(event.id, () => dropSignup(event.id))}>
+                confirmDrop ? (
+                  <div className="flex items-center gap-2">
+                    <p className="flex-1 text-[15px] font-medium text-ink">Drop this shift?</p>
+                    <Button variant="ghost" size="lg" className="h-12 px-5" onClick={() => setConfirmDrop(false)}>
+                      Keep
+                    </Button>
+                    <Button
+                      variant="danger"
+                      size="lg"
+                      className="h-12 px-5"
+                      disabled={busy}
+                      onClick={() => run(event.id, () => dropSignup(event.id), () => setConfirmDrop(false))}
+                    >
                       Drop
                     </Button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-good-soft font-medium text-good">
+                      <Check size={18} strokeWidth={2.5} /> {past ? "You were there" : "You're signed up"}
+                    </div>
+                    {!past && (
+                      <Button variant="outline" size="lg" className="h-12 px-5" disabled={busy} onClick={() => setConfirmDrop(true)}>
+                        Drop
+                      </Button>
+                    )}
+                  </div>
+                )
               ) : past ? (
                 <p className="text-center text-sm text-muted">This already happened.</p>
               ) : left > 0 ? (
-                <Button size="lg" className="h-12 w-full" disabled={busy} onClick={() => run(event.id, () => signUp(event.id))}>
-                  {busy ? "Signing up…" : "Sign up"}
-                </Button>
+                <>
+                  <Button size="lg" className="h-12 w-full" disabled={busy} onClick={() => run(event.id, () => signUp(event.id))}>
+                    {busy ? "Signing up…" : "Sign up"}
+                  </Button>
+                  <p className="mt-2 text-center text-sm text-muted">
+                    {left} {left === 1 ? "spot" : "spots"} left
+                  </p>
+                </>
               ) : (
                 <div className="flex h-12 items-center justify-center rounded-xl bg-canvas font-medium text-muted">Full</div>
               )}
@@ -207,7 +232,7 @@ function AddPerson({
   event: CalEvent;
   everyone: { id: string; name: string }[];
   busy: boolean;
-  run: (id: string, fn: () => Promise<ActionResult>) => void;
+  run: (id: string, fn: () => Promise<ActionResult>, onDone?: () => void) => void;
 }) {
   const [value, setValue] = useState("");
   const options = everyone.filter((p) => !event.people.some((x) => x.id === p.id));

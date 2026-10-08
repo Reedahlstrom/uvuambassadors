@@ -2,7 +2,9 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Pencil, Plus, Search, Upload, X } from "lucide-react";
-import { deleteTeam, savePerson, saveTeam, type FormState } from "@/app/actions/admin";
+import Link from "next/link";
+import { deleteTeam, savePerson, saveTeam, setPersonTeam, type FormState } from "@/app/actions/admin";
+import { PLACEHOLDER_EMAIL_DOMAIN } from "@/lib/config";
 import { useToast } from "@/components/toast";
 import { Avatar, Button, ButtonLink, Card, Field, cx, inputClass } from "@/components/ui";
 
@@ -17,13 +19,15 @@ export function PeopleAdmin({ people, teams }: { people: Person[]; teams: Team[]
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<Person | "new" | null>(null);
   const [editingTeam, setEditingTeam] = useState<Team | "new" | null>(null);
-  const teamName = new Map(teams.map((t) => [t.id, t.name]));
+  const [noEmailOnly, setNoEmailOnly] = useState(false);
 
   const rows = people.filter(
     (p) =>
       (role === "all" || p.role === role) &&
-      (!q || p.name.toLowerCase().includes(q.toLowerCase()) || p.email.includes(q.toLowerCase())),
+      (!q || p.name.toLowerCase().includes(q.toLowerCase()) || p.email.includes(q.toLowerCase())) &&
+      (!noEmailOnly || p.email.endsWith(PLACEHOLDER_EMAIL_DOMAIN)),
   );
+  const noEmail = people.filter((p) => p.email.endsWith(PLACEHOLDER_EMAIL_DOMAIN)).length;
   const counts = { all: people.length, ambassador: 0, manager: 0, admin: 0 } as Record<Role | "all", number>;
   people.forEach((p) => counts[p.role]++);
 
@@ -44,6 +48,17 @@ export function PeopleAdmin({ people, teams }: { people: Person[]; teams: Team[]
               <span className={role === r ? "text-white/75" : "text-muted"}>{counts[r]}</span>
             </button>
           ))}
+          {noEmail > 0 && (
+            <button
+              onClick={() => setNoEmailOnly((v) => !v)}
+              className={cx(
+                "inline-flex h-9 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium",
+                noEmailOnly ? "border-warn bg-warn text-white" : "border-warn/30 bg-warn-soft text-warn hover:brightness-95",
+              )}
+            >
+              No email <span className={noEmailOnly ? "text-white/75" : ""}>{noEmail}</span>
+            </button>
+          )}
           <div className="relative w-full sm:ml-2 sm:w-56">
             <Search size={15} className="absolute top-1/2 left-3 -translate-y-1/2 text-faint" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" className={inputClass + " h-9 pl-9 text-sm"} />
@@ -64,12 +79,18 @@ export function PeopleAdmin({ people, teams }: { people: Person[]; teams: Team[]
               <Avatar name={p.name} size={34} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium text-ink">
-                  {p.name}
+                  <Link href={`/people/${p.id}`} className="hover:text-brand hover:underline">
+                    {p.name}
+                  </Link>
                   {!p.active && <span className="ml-2 text-sm font-normal text-muted">Inactive</span>}
                 </p>
-                <p className="truncate text-[13px] text-muted">{p.email}</p>
+                {p.email.endsWith(PLACEHOLDER_EMAIL_DOMAIN) ? (
+                  <p className="truncate text-[13px] font-medium text-warn">No email yet</p>
+                ) : (
+                  <p className="truncate text-[13px] text-muted">{p.email}</p>
+                )}
               </div>
-              <span className="hidden w-32 text-sm text-ink-2 sm:block">{p.teamId ? teamName.get(p.teamId) : "—"}</span>
+              <TeamSelect person={p} teams={teams} />
               <span
                 className={cx(
                   "hidden w-28 text-sm sm:block",
@@ -267,5 +288,33 @@ function TeamModal({ team, people, onClose }: { team: Team | null; people: Perso
         </div>
       </form>
     </Modal>
+  );
+}
+
+/** Pick a team right in the list — saves as soon as it changes */
+function TeamSelect({ person, teams }: { person: Person; teams: Team[] }) {
+  const toast = useToast();
+  const [pending, start] = useTransition();
+  return (
+    <select
+      value={person.teamId ?? ""}
+      disabled={pending}
+      aria-label={`Team for ${person.name}`}
+      onChange={(e) => {
+        const teamId = e.target.value || null;
+        start(async () => {
+          const r = await setPersonTeam(person.id, teamId);
+          toast(r.error ?? (teamId ? `Moved to ${teams.find((t) => t.id === teamId)?.name}` : "Removed from team"), r.error ? "error" : "ok");
+        });
+      }}
+      className={cx("hidden h-9 w-40 rounded-xl border border-line bg-white px-2.5 text-sm sm:block", person.teamId ? "text-ink-2" : "text-faint")}
+    >
+      <option value="">No team</option>
+      {teams.map((t) => (
+        <option key={t.id} value={t.id}>
+          {t.name}
+        </option>
+      ))}
+    </select>
   );
 }

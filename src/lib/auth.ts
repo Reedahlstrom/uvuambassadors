@@ -68,7 +68,7 @@ export async function requireUser(): Promise<User> {
 
 export async function requireRole(...roles: Role[]): Promise<User> {
   const user = await requireUser();
-  if (!roles.includes(user.role)) redirect("/calendar");
+  if (!roles.includes(user.role)) redirect("/signup");
   return user;
 }
 

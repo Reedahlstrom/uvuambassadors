@@ -32,7 +32,7 @@ export async function signUp(eventId: string): Promise<ActionResult> {
   const user = await requireUser();
   const r = await addToEvent(eventId, user.id, true);
   revalidatePath("/", "layout");
-  return r.ok ? { ok: true, message: "You're signed up" } : r;
+  return r.ok ? { ok: true, message: r.message ?? "You're signed up. It's in My shifts." } : r;
 }
 
 export async function dropSignup(eventId: string): Promise<ActionResult> {
@@ -43,7 +43,7 @@ export async function dropSignup(eventId: string): Promise<ActionResult> {
   if (event.startsAt <= new Date()) return { ok: false, error: "This already started." };
   await db.delete(schema.signups).where(and(eq(schema.signups.eventId, eventId), eq(schema.signups.userId, user.id)));
   revalidatePath("/", "layout");
-  return { ok: true, message: "Removed" };
+  return { ok: true, message: "Dropped" };
 }
 
 // ----- Admin roster controls (from the event panel) -----

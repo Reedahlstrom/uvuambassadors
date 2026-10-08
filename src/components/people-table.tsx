@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState, useTransition } from "react";
 import { Check, Mail, Search, X } from "lucide-react";
 import { sendReminders } from "@/app/actions/reminders";
@@ -134,7 +135,9 @@ export function PeopleTable({
                   <div className="flex items-center gap-3">
                     <Avatar name={p.name} size={32} />
                     <div className="min-w-0">
-                      <p className="truncate font-medium text-ink">{p.name}</p>
+                      <Link href={`/people/${p.id}`} className="block truncate font-medium text-ink hover:text-brand hover:underline">
+                        {p.name}
+                      </Link>
                       {p.neverLoggedIn && <p className="text-xs text-muted">Hasn&apos;t signed in yet</p>}
                     </div>
                   </div>
@@ -166,7 +169,13 @@ export function PeopleTable({
             <div className="mb-3 flex items-center gap-3">
               {canRemind && <Checkbox checked={selected.has(p.id)} onChange={() => toggle(p.id)} label={`Select ${p.name}`} />}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-ink">{p.name}</p>
+                <Link
+                  href={`/people/${p.id}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block truncate font-medium text-ink underline decoration-line underline-offset-4"
+                >
+                  {p.name}
+                </Link>
                 {showTeam && <p className="text-xs text-muted">{p.teamName}</p>}
               </div>
               <StatusPill status={p.status} />

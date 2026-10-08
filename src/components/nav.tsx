@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, CircleCheck, LayoutDashboard, LogOut, Users } from "lucide-react";
+import { CalendarDays, CircleCheck, CirclePlus, LayoutDashboard, LogOut, Users } from "lucide-react";
 import { signOut } from "@/app/actions/auth";
 import { Avatar, cx } from "./ui";
 
 type Role = "ambassador" | "manager" | "admin";
 
 const items = [
+  { href: "/signup", label: "Sign up", icon: CirclePlus, roles: ["ambassador", "manager", "admin"] },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, roles: ["ambassador", "manager", "admin"] },
   { href: "/my", label: "My shifts", icon: CircleCheck, roles: ["ambassador", "manager", "admin"] },
   { href: "/team", label: "My team", icon: Users, roles: ["manager"] },
@@ -25,7 +26,7 @@ export function Nav({ user }: { user: { name: string; role: Role } }) {
     <>
       <header className="sticky top-0 z-30 border-b border-line/80 bg-white/85 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center gap-6 px-4 sm:px-6">
-          <Link href="/calendar" className="flex items-center gap-2.5">
+          <Link href="/signup" className="flex items-center gap-2.5">
             <Logo />
             <span className="font-display text-[22px] leading-none text-ink">UVU Ambassadors</span>
           </Link>

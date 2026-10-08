@@ -7,7 +7,7 @@ import { LoginForm } from "./login-form";
 export const metadata: Metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string }> }) {
-  if (await getCurrentUser()) redirect("/calendar");
+  if (await getCurrentUser()) redirect("/signup");
   const { expired } = await searchParams;
   return (
     <main className="hero-glow flex min-h-dvh flex-col items-center justify-center px-4 py-10">
