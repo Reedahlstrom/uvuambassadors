@@ -27,5 +27,8 @@ export const DEMO_EMAILS = {
   admin: "admin@example.com",
 };
 
+// New accounts (people not already on the roster) must use one of these email domains
+export const SIGNUP_DOMAINS = ["uvu.edu", "my.uvu.edu"];
+
 // People imported from SignUpGenius before their real email is known (.invalid can never receive mail)
 export const PLACEHOLDER_EMAIL_DOMAIN = "@needs-email.invalid";

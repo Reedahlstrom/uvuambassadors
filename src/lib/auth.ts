@@ -20,8 +20,12 @@ function secret() {
   return new TextEncoder().encode(s);
 }
 
-export async function startSession(userId: string) {
-  const jwt = await new SignJWT({})
+/**
+ * verified = they proved it's them (email code, email link or Microsoft).
+ * Ambassadors may sign in unverified with name + email; managers and admins never can.
+ */
+export async function startSession(userId: string, verified: boolean) {
+  const jwt = await new SignJWT({ v: verified })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setIssuedAt()
@@ -54,6 +58,9 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     const db = await getDb();
     const [user] = await db.select().from(schema.users).where(eq(schema.users.id, payload.sub));
     if (!user || !user.active) return null;
+    // Sessions from before this flag existed were all verified; an unverified session never counts for a
+    // manager or admin (e.g. someone signed in as an ambassador who was promoted later).
+    if (user.role !== "ambassador" && payload.v === false) return null;
     return user;
   } catch {
     return null;

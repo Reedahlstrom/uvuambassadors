@@ -40,7 +40,7 @@ export function startMicrosoftLogin(redirectUri: string) {
   return { url: `${authority()}/authorize?${q}`, cookie: JSON.stringify({ state, nonce, verifier }) };
 }
 
-/** Returns the signed-in person's email (lowercase), or null if anything doesn't check out. */
+/** Returns the signed-in person's email (lowercase) and name, or null if anything doesn't check out. */
 export async function finishMicrosoftLogin(opts: { code: string; state: string; cookie: string | undefined; redirectUri: string }) {
   let saved: { state: string; nonce: string; verifier: string };
   try {
@@ -76,7 +76,8 @@ export async function finishMicrosoftLogin(opts: { code: string; state: string; 
     if (payload.iss !== `https://login.microsoftonline.com/${tid}/v2.0`) return null;
     if (payload.nonce !== saved.nonce) return null;
     const email = String(payload.email ?? payload.preferred_username ?? payload.upn ?? "").trim().toLowerCase();
-    return email.includes("@") ? email : null;
+    const name = String(payload.name ?? "").trim().slice(0, 120);
+    return email.includes("@") ? { email, name } : null;
   } catch (e) {
     console.error("Microsoft id_token check failed", e);
     return null;

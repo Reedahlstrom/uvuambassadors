@@ -1,13 +1,13 @@
 "use client";
 
 import { useActionState, useTransition } from "react";
-import { demoLogin, requestLogin, verifyCode, type LoginState } from "@/app/actions/auth";
+import { demoLogin, enter, verifyCode, type LoginState } from "@/app/actions/auth";
 import { Button, inputClass } from "@/components/ui";
 
 const DEMO_LABEL = { ambassador: ["Reed", "Ambassador"], manager: ["Javi", "Manager"], admin: ["Program", "Admin"] } as const;
 
 export function LoginForm({ demo, expired, microsoft, msError }: { demo: boolean; expired: boolean; microsoft: boolean; msError?: string }) {
-  const [emailState, sendCode, sending] = useActionState<LoginState, FormData>(requestLogin, { step: "email" });
+  const [emailState, sendCode, sending] = useActionState<LoginState, FormData>(enter, { step: "email" });
   const [codeState, checkCode, checking] = useActionState<LoginState, FormData>(verifyCode, { step: "code" });
   const [demoPending, startDemo] = useTransition();
 
@@ -17,9 +17,9 @@ export function LoginForm({ demo, expired, microsoft, msError }: { demo: boolean
     return (
       <form action={checkCode} className="space-y-4">
         <div>
-          <p className="text-lg font-semibold text-ink">Check your email</p>
+          <p className="text-lg font-semibold text-ink">One more step</p>
           <p className="mt-1 text-[15px] text-muted">
-            We sent a 6-digit code to <span className="font-medium text-ink-2">{emailState.email}</span>
+            Managers and admins confirm with a code. We sent it to <span className="font-medium text-ink-2">{emailState.email}</span>
           </p>
         </div>
         <input type="hidden" name="email" value={emailState.email} />
@@ -62,29 +62,49 @@ export function LoginForm({ demo, expired, microsoft, msError }: { demo: boolean
           </a>
           {msError && <p className="text-sm text-bad">{msError}</p>}
           <div className="flex items-center gap-3 text-xs text-muted">
-            <span className="h-px flex-1 bg-line" /> or get a code by email <span className="h-px flex-1 bg-line" />
+            <span className="h-px flex-1 bg-line" /> or with your name and email <span className="h-px flex-1 bg-line" />
           </div>
         </div>
       )}
       {!microsoft && msError && <p className="text-sm text-bad">{msError}</p>}
       <form action={sendCode} className="space-y-4">
+        <div>
+          <p className="text-lg font-semibold text-ink">Sign in or create your account</p>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <span className="mb-1.5 block text-[15px] font-medium text-ink">First name</span>
+            <input
+              name="firstName"
+              autoComplete="given-name"
+              required
+              autoFocus
+              defaultValue={emailState.firstName}
+              className={inputClass + " h-12"}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-[15px] font-medium text-ink">Last name</span>
+            <input name="lastName" autoComplete="family-name" required defaultValue={emailState.lastName} className={inputClass + " h-12"} />
+          </label>
+        </div>
         <label className="block">
-          <span className="mb-1.5 block text-[15px] font-medium text-ink">Your UVU email</span>
+          <span className="mb-1.5 block text-[15px] font-medium text-ink">UVU email</span>
           <input
             name="email"
             type="email"
             autoComplete="email"
+            inputMode="email"
             required
-            autoFocus
             defaultValue={emailState.email}
             placeholder="you@uvu.edu"
             className={inputClass + " h-12"}
           />
         </label>
-        {expired && !emailState.error && <p className="text-sm text-warn">That link expired. Enter your email for a new code.</p>}
+        {expired && !emailState.error && <p className="text-sm text-warn">That link expired. Sign in again.</p>}
         {emailState.error && <p className="text-sm text-bad">{emailState.error}</p>}
         <Button type="submit" size="lg" className="w-full" disabled={sending}>
-          {sending ? "Sending…" : "Email me a code"}
+          {sending ? "One sec…" : "Continue"}
         </Button>
       </form>
 

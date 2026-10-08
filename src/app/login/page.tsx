@@ -8,9 +8,10 @@ import { LoginForm } from "./login-form";
 export const metadata: Metadata = { title: "Sign in" };
 
 const MS_ERRORS: Record<string, string> = {
-  failed: "Microsoft sign-in didn't work. Try again, or use an email code.",
+  failed: "Microsoft sign-in didn't work. Try again, or use your name and email.",
   cancelled: "Microsoft sign-in was cancelled.",
-  off: "Microsoft sign-in isn't set up yet. Use an email code.",
+  off: "Microsoft sign-in isn't set up yet. Use your name and email.",
+  off_account: "Your account is turned off. Ask your manager.",
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string; ms?: string; email?: string }> }) {

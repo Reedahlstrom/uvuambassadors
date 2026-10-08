@@ -45,16 +45,19 @@ function outlookFixture() {
 test("ambassador, manager and admin flows", async ({ browser, request }) => {
   const errors: string[] = [];
 
-  // ---------- Ambassador: email code sign-in ----------
+  const enter = async (p: Page, first: string, last: string, email: string) => {
+    await p.goto("/login");
+    await p.fill("input[name=firstName]", first);
+    await p.fill("input[name=lastName]", last);
+    await p.fill("input[name=email]", email);
+    await p.getByRole("button", { name: "Continue" }).click();
+  };
+
+  // ---------- Manager: name + email, then a code ----------
   let ctx = await browser.newContext();
   let page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(String(e)));
-  await page.goto("/login");
-  await page.fill("input[name=email]", "nobody@uvu.edu");
-  await page.getByRole("button", { name: "Email me a code" }).click();
-  await expect(page.getByText("isn't on the ambassador list")).toBeVisible();
-  await page.fill("input[name=email]", "Reed.Ahlstrom@example.com");
-  await page.getByRole("button", { name: "Email me a code" }).click();
+  await enter(page, "Javi", "M", "Javi@example.com");
   const hint = await page.getByText("Your code is").innerText();
   const code = hint.match(/(\d{6})/)![1];
   await page.fill("input[name=code]", code === "000000" ? "111111" : "000000");
@@ -62,6 +65,21 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await expect(page.getByText("That code didn't work")).toBeVisible();
   await page.fill("input[name=code]", code);
   await page.getByRole("button", { name: "Sign in" }).click();
+  await page.waitForURL("**/signup");
+  await ctx.close();
+
+  // ---------- Someone new: gets an account (no team yet) and goes straight in ----------
+  ctx = await browser.newContext();
+  page = await ctx.newPage();
+  await enter(page, "Newbie", "Tester", "newbie.tester@uvu.edu");
+  await page.waitForURL("**/welcome");
+  await ctx.close();
+
+  // ---------- Ambassador on the roster: straight in, no code ----------
+  ctx = await browser.newContext();
+  page = await ctx.newPage();
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await enter(page, "Reed", "Ahlstrom", "Reed.Ahlstrom@example.com");
   await page.waitForURL("**/signup");
 
   // Sign up page: what I still need, open spots only, one tap to join (the row stays and says "You're in")
