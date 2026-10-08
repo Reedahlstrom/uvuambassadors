@@ -117,6 +117,8 @@ export type PersonProgress = {
   status: Status;
   total: number;
   neverLoggedIn: boolean;
+  /** Their next shift that hasn't started yet */
+  next: { title: string; type: string; startsAt: string } | null;
 };
 
 export async function getProgress(opts: { teamId?: string; userIds?: string[] } = {}): Promise<PersonProgress[]> {
@@ -144,7 +146,9 @@ export async function getProgress(opts: { teamId?: string; userIds?: string[] } 
       status: schema.signups.status,
       type: schema.events.type,
       withAc: schema.events.withAc,
+      startsAt: schema.events.startsAt,
       endsAt: schema.events.endsAt,
+      title: schema.events.title,
     })
     .from(schema.signups)
     .innerJoin(schema.events, eq(schema.events.id, schema.signups.eventId))
@@ -168,6 +172,10 @@ export async function getProgress(opts: { teamId?: string; userIds?: string[] } 
   return people.map(({ user, teamName }) => {
     const list = byUser.get(user.id) ?? [];
     const t = tally(list);
+    const now = new Date();
+    const next = list
+      .filter((l) => l.type !== "calendar" && l.status !== "no_show" && l.startsAt > now)
+      .sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime())[0];
     return {
       id: user.id,
       name: user.name,
@@ -179,6 +187,7 @@ export async function getProgress(opts: { teamId?: string; userIds?: string[] } 
       status: statusOf(t, reqs, elapsed),
       total: list.filter((l) => l.type !== "calendar").length,
       neverLoggedIn: !user.lastLoginAt,
+      next: next ? { title: next.title, type: next.type, startsAt: next.startsAt.toISOString() } : null,
     };
   });
 }

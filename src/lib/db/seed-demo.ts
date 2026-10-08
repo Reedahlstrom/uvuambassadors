@@ -4,7 +4,7 @@ import { getDb, schema } from "./index";
 import { DEMO_EMAILS } from "../config";
 
 /**
- * Fake demo data: 4 admins, 6 managers with a team each, 40 ambassadors,
+ * Fake demo data: 4 admins, 6 managers with a team of 5 each (manager + 5 = 6), 30 ambassadors,
  * a full semester of tours / events / high school visits / Outlook items, and sign-ups.
  * Emails use @example.com so nothing real can ever be emailed.
  */
@@ -130,18 +130,20 @@ export async function seedDemo() {
     { name: makeName("Grace Tanner"), email: "" },
   ].map((a) => ({ ...a, email: a.email || emailFor(a.name), role: "admin" as const, calendarToken: token(), onboardedAt: now }));
 
-  const managerNames = [makeName("Ashley Jensen"), makeName(), makeName(), makeName(), makeName(), makeName()];
+  const managerNames = [makeName("Javi"), makeName(), makeName(), makeName(), makeName(), makeName()];
   const managers = managerNames.map((name) => ({ name, email: emailFor(name), role: "manager" as const, calendarToken: token(), onboardedAt: now }));
 
-  const ambassadorNames = [makeName("Jordan Lee"), ...Array.from({ length: 39 }, () => makeName())];
+  // The first team is the demo team: Reed (the demo ambassador) and Javi (the demo manager)
+  const DEMO_TEAM = ["Reed Ahlstrom", "Nay Nay", "Lyndi", "Avery South", "Chloe Melton"];
+  const ambassadorNames = [...DEMO_TEAM.map((n) => makeName(n)), ...Array.from({ length: 25 }, () => makeName())];
   const ambassadors = ambassadorNames.map((name, i) => ({
     name,
     email: emailFor(name),
     role: "ambassador" as const,
     calendarToken: token(),
     // a few people have never logged in yet
-    onboardedAt: i > 0 && i % 9 === 0 ? null : now,
-    lastLoginAt: i > 0 && i % 9 === 0 ? null : now,
+    onboardedAt: i > 4 && i % 9 === 0 ? null : now,
+    lastLoginAt: i > 4 && i % 9 === 0 ? null : now,
   }));
 
   const insertedAdmins = await db.insert(schema.users).values(admins).returning();
@@ -149,7 +151,7 @@ export async function seedDemo() {
   const insertedAmbs = await db.insert(schema.users).values(ambassadors).returning();
   void insertedAdmins;
 
-  const teamNames = ["Team Timp", "Team Cascade", "Team Nebo", "Team Lone Peak", "Team Provo Peak", "Team Box Elder"];
+  const teamNames = ["Blockbusters 90's", "Team Cascade", "Team Nebo", "Team Lone Peak", "Team Provo Peak", "Team Box Elder"];
   const insertedTeams = await db
     .insert(schema.teams)
     .values(teamNames.map((name, i) => ({ name, managerId: insertedManagers[i].id })))
@@ -160,7 +162,8 @@ export async function seedDemo() {
     await db.update(schema.users).set({ teamId: insertedTeams[i].id }).where(eq(schema.users.id, insertedManagers[i].id));
   }
   for (let i = 0; i < insertedAmbs.length; i++) {
-    await db.update(schema.users).set({ teamId: insertedTeams[i % insertedTeams.length].id }).where(eq(schema.users.id, insertedAmbs[i].id));
+    // 5 per team, in order: the first 5 ambassadors are the demo team
+    await db.update(schema.users).set({ teamId: insertedTeams[Math.floor(i / 5) % insertedTeams.length].id }).where(eq(schema.users.id, insertedAmbs[i].id));
   }
 
   // ---------- Events ----------
@@ -273,9 +276,35 @@ export async function seedDemo() {
     }
   };
 
+  // Demo team: exact numbers so the demo tells a clear story
+  // [tours done, tours signed up, events done, events signed up, HS done (AC), HS signed up (AC)]
+  const DEMO_PLAN: [number, number, number, number, [number, number], [number, number]][] = [
+    [5, 2, 3, 2, [2, 1], [1, 1]], // Reed: 5 tours given + 2 coming up
+    [7, 0, 6, 0, [4, 2], [0, 0]], // Nay Nay: complete
+    [1, 1, 1, 0, [0, 0], [1, 0]], // Lyndi: behind
+    [3, 3, 2, 3, [1, 1], [2, 1]], // Avery: on track
+    [1, 0, 1, 1, [0, 0], [1, 0]], // Chloe: behind
+  ];
+  DEMO_PLAN.forEach(([tDone, tNext, eDone, eNext, [hDone, hDoneAc], [hNext, hNextAc]], i) => {
+    const id = insertedAmbs[i].id;
+    const mine = new Set<string>();
+    const soon = (type: string, ac?: boolean) =>
+      ofType(type, false, ac).filter((e) => e.startsAt.getTime() < now.getTime() + 1000 * 60 * 60 * 24 * 30);
+    take(id, ofType("tour", true), tDone, mine);
+    take(id, soon("tour"), tNext, mine);
+    take(id, ofType("event", true), eDone, mine);
+    take(id, soon("event"), eNext, mine);
+    take(id, ofType("hs_visit", true, true), hDoneAc, mine);
+    take(id, ofType("hs_visit", true, false), hDone - hDoneAc, mine);
+    take(id, soon("hs_visit", true), hNextAc, mine);
+    take(id, soon("hs_visit", false), hNext - hNextAc, mine);
+  });
+  for (const s of signups) s.status = "going";
+
   const reqs = { tour: 7, event: 6, hs_visit: 4 };
   insertedAmbs.forEach((amb, i) => {
-    const f = i === 0 ? 0.85 : i % 13 === 5 ? 0 : 0.15 + rand() * 1.05;
+    if (i < DEMO_PLAN.length) return;
+    const f = i % 13 === 5 ? 0 : 0.15 + rand() * 1.05;
     const mine = new Set<string>();
     for (const type of ["tour", "event", "hs_visit"] as const) {
       const total = Math.min(reqs[type] + (rand() < 0.15 ? 1 : 0), Math.round(reqs[type] * Math.min(1.1, f) * (0.85 + rand() * 0.3)));

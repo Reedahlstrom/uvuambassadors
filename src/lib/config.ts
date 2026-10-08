@@ -22,8 +22,8 @@ export const TYPE_META = {
 
 // Demo accounts created by the demo data (all @example.com, never real people)
 export const DEMO_EMAILS = {
-  ambassador: "jordan.lee@example.com",
-  manager: "ashley.jensen@example.com",
+  ambassador: "reed.ahlstrom@example.com",
+  manager: "javi@example.com",
   admin: "admin@example.com",
 };
 

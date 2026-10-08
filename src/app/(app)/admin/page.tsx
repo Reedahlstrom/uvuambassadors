@@ -5,6 +5,7 @@ import { and, asc, count, eq, gte, isNotNull, lt } from "drizzle-orm";
 import { PeopleTable } from "@/components/people-table";
 import { StatTiles } from "@/components/stat-tiles";
 import { Dot } from "@/components/ui";
+import { Download } from "lucide-react";
 import { TYPE_META } from "@/lib/config";
 import { getProgress, getSemester, getTeams, reqsOf } from "@/lib/data";
 import { getDb, schema } from "@/lib/db";
@@ -68,7 +69,12 @@ export default async function AdminOverview() {
       )}
 
       <section>
-        <h2 className="mb-3 font-semibold text-ink">Ambassadors</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-semibold text-ink">Ambassadors</h2>
+          <a href="/api/export/progress" className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline">
+            <Download size={15} /> Export CSV
+          </a>
+        </div>
         <PeopleTable people={people} reqs={reqs} showTeam teams={teams} canRemind />
       </section>
     </div>

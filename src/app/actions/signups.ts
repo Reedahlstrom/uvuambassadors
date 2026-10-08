@@ -73,3 +73,26 @@ export async function adminSetNoShow(eventId: string, userId: string, noShow: bo
   revalidatePath("/", "layout");
   return { ok: true, message: noShow ? "Marked no-show" : "Marked attended" };
 }
+
+/** Managers (for people on their own team) and admins mark whether someone actually showed up. */
+export async function markNoShow(eventId: string, userId: string, noShow: boolean): Promise<ActionResult> {
+  const viewer = await requireRole("manager", "admin");
+  const db = await getDb();
+  if (viewer.role !== "admin") {
+    const [row] = await db
+      .select({ managerId: schema.teams.managerId })
+      .from(schema.users)
+      .innerJoin(schema.teams, eq(schema.teams.id, schema.users.teamId))
+      .where(eq(schema.users.id, userId));
+    if (row?.managerId !== viewer.id) return { ok: false, error: "Only their manager or an admin can change this." };
+  }
+  const [event] = await db.select({ endsAt: schema.events.endsAt }).from(schema.events).where(eq(schema.events.id, eventId));
+  if (!event) return { ok: false, error: "This was removed." };
+  if (event.endsAt > new Date()) return { ok: false, error: "This hasn't happened yet." };
+  await db
+    .update(schema.signups)
+    .set({ status: noShow ? "no_show" : "going" })
+    .where(and(eq(schema.signups.eventId, eventId), eq(schema.signups.userId, userId)));
+  revalidatePath("/", "layout");
+  return { ok: true, message: noShow ? "Marked no-show" : "Marked as done" };
+}

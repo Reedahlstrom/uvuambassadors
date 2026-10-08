@@ -53,7 +53,7 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await page.fill("input[name=email]", "nobody@uvu.edu");
   await page.getByRole("button", { name: "Email me a code" }).click();
   await expect(page.getByText("isn't on the ambassador list")).toBeVisible();
-  await page.fill("input[name=email]", "Jordan.Lee@example.com");
+  await page.fill("input[name=email]", "Reed.Ahlstrom@example.com");
   await page.getByRole("button", { name: "Email me a code" }).click();
   const hint = await page.getByText("Your code is").innerText();
   const code = hint.match(/(\d{6})/)![1];

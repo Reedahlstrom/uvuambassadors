@@ -8,8 +8,10 @@ import { z } from "zod";
 import { requireRole } from "@/lib/auth";
 import { getSemester, setSetting } from "@/lib/data";
 import { getDb, schema } from "@/lib/db";
-import { addDays, utahToDate } from "@/lib/dates";
-import { PLACEHOLDER_EMAIL_DOMAIN } from "@/lib/config";
+import { addDays, dateLong, dateToUtah, timeRange, utahToDate } from "@/lib/dates";
+import { APP_URL, PLACEHOLDER_EMAIL_DOMAIN } from "@/lib/config";
+import { sendEmails } from "@/lib/email";
+import type { ActionResult } from "./signups";
 import { syncOutlook } from "@/lib/outlook";
 
 export type FormState = { error?: string; ok?: string };
@@ -81,11 +83,91 @@ export async function saveEvent(_prev: FormState, form: FormData): Promise<FormS
   redirect("/admin/events");
 }
 
+/** Emails everyone signed up for an upcoming event (date changed / cancelled). */
+async function tellSignedUp(
+  event: typeof schema.events.$inferSelect,
+  sentById: string,
+  subject: string,
+  heading: string,
+  lines: string[],
+) {
+  if (event.startsAt <= new Date()) return 0;
+  const db = await getDb();
+  const people = await db
+    .select({ id: schema.users.id, email: schema.users.email })
+    .from(schema.signups)
+    .innerJoin(schema.users, eq(schema.users.id, schema.signups.userId))
+    .where(eq(schema.signups.eventId, event.id));
+  const to = people.filter((p) => !p.email.endsWith(PLACEHOLDER_EMAIL_DOMAIN));
+  return sendEmails(
+    to.map((p) => ({
+      to: p.email,
+      toUserId: p.id,
+      sentById,
+      kind: "shift" as const,
+      subject,
+      heading,
+      lines,
+      button: { label: "My shifts", url: `${APP_URL}/my` },
+    })),
+  );
+}
+
+/** Drag and drop on the calendar: same time of day, new date. Tells everyone signed up. */
+export async function moveEvent(id: string, day: string): Promise<ActionResult> {
+  const admin = await requireRole("admin");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { ok: false, error: "Pick a day." };
+  const db = await getDb();
+  const [event] = await db.select().from(schema.events).where(eq(schema.events.id, id));
+  if (!event) return { ok: false, error: "This was removed." };
+  if (event.source === "outlook") return { ok: false, error: "This comes from Outlook. Change it there." };
+
+  const from = dateToUtah(event.startsAt);
+  if (from.date === day) return { ok: true, message: "No change" };
+  let startsAt: Date;
+  let endsAt: Date;
+  if (event.allDay) {
+    const days = Math.max(1, Math.round((event.endsAt.getTime() - event.startsAt.getTime()) / 86_400_000));
+    startsAt = utahToDate(day);
+    endsAt = utahToDate(addDays(day, days));
+  } else {
+    const to = dateToUtah(event.endsAt);
+    const span = Math.round((utahToDate(to.date).getTime() - utahToDate(from.date).getTime()) / 86_400_000);
+    startsAt = utahToDate(day, from.time);
+    endsAt = utahToDate(addDays(day, span), to.time);
+  }
+  if (endsAt <= startsAt) return { ok: false, error: "That time doesn't exist on that day. Edit it instead." };
+  const wasUpcoming = event.startsAt > new Date();
+  if (wasUpcoming && startsAt <= new Date()) return { ok: false, error: "Pick a day that hasn't happened yet." };
+  await db.update(schema.events).set({ startsAt, endsAt, updatedAt: new Date() }).where(eq(schema.events.id, id));
+
+  const when = `${dateLong(startsAt)}, ${timeRange(startsAt, endsAt, event.allDay)}`;
+  const told = await tellSignedUp(
+    { ...event, startsAt, endsAt },
+    admin.id,
+    `New date: ${event.title}`,
+    "The date changed",
+    [`${event.title} is now ${when}.`, "You're still signed up. If you can't make it, drop it in My shifts."],
+  );
+  refresh();
+  return { ok: true, message: told ? `Moved · emailed ${told} signed up` : "Moved" };
+}
+
 export async function deleteEvent(id: string, wholeSeries = false) {
-  await requireRole("admin");
+  const admin = await requireRole("admin");
   const db = await getDb();
   const [event] = await db.select().from(schema.events).where(eq(schema.events.id, id));
   if (!event) redirect("/admin/events");
+  const doomed =
+    wholeSeries && event.seriesId
+      ? await db.select().from(schema.events).where(and(eq(schema.events.seriesId, event.seriesId), gte(schema.events.startsAt, event.startsAt)))
+      : [event];
+  for (const e of doomed) {
+    await tellSignedUp(e, admin.id, `Cancelled: ${e.title}`, "This was cancelled", [
+      `${e.title} on ${dateLong(e.startsAt)}, ${timeRange(e.startsAt, e.endsAt, e.allDay)} was cancelled.`,
+      "It's off your shifts. Nothing else you need to do.",
+    ]);
+  }
   if (wholeSeries && event.seriesId) {
     // Delete this one and every later one in the series
     await db

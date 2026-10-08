@@ -6,7 +6,9 @@ import { Check, Mail, Search, X } from "lucide-react";
 import { sendReminders } from "@/app/actions/reminders";
 import type { PersonProgress } from "@/lib/data";
 import { needsSentence, type Reqs, type Status } from "@/lib/progress";
+import { dateShort } from "@/lib/dates";
 import { Avatar, Bar, Button, StatusPill, cx, inputClass } from "./ui";
+import { DoneCount, DoneLegend } from "./progress-card";
 import { useToast } from "./toast";
 
 type Filter = "all" | Status | "none";
@@ -103,6 +105,8 @@ export function PeopleTable({
         </div>
       </div>
 
+      <DoneLegend className="mb-3 px-1" />
+
       {/* Desktop table */}
       <div className="hidden overflow-hidden rounded-2xl border border-line bg-white shadow-soft md:block">
         <table className="w-full text-[15px]">
@@ -138,7 +142,11 @@ export function PeopleTable({
                       <Link href={`/people/${p.id}`} className="block truncate font-medium text-ink hover:text-brand hover:underline">
                         {p.name}
                       </Link>
-                      {p.neverLoggedIn && <p className="text-xs text-muted">Hasn&apos;t signed in yet</p>}
+                      {p.neverLoggedIn ? (
+                        <p className="text-xs text-muted">Hasn&apos;t signed in yet</p>
+                      ) : (
+                        <NextShift next={p.next} />
+                      )}
                     </div>
                   </div>
                 </td>
@@ -177,6 +185,7 @@ export function PeopleTable({
                   {p.name}
                 </Link>
                 {showTeam && <p className="text-xs text-muted">{p.teamName}</p>}
+                <NextShift next={p.next} />
               </div>
               <StatusPill status={p.status} />
             </div>
@@ -222,15 +231,27 @@ export function PeopleTable({
   );
 }
 
+function NextShift({ next }: { next: PersonProgress["next"] }) {
+  return (
+    <p className="truncate text-xs text-muted">
+      {next ? (
+        <>
+          Next: {next.title} · {dateShort(next.startsAt)}
+        </>
+      ) : (
+        "Nothing coming up"
+      )}
+    </p>
+  );
+}
+
 const rank = (s: Status) => (s === "behind" ? 0 : s === "on_track" ? 1 : 2);
 
 function ReqCell({ done, scheduled, need, color }: { done: number; scheduled: number; need: number; color: string }) {
-  const have = done + scheduled;
   return (
-    <div title={`${done} done · ${scheduled} signed up`}>
-      <p className="mb-1 text-sm tabular-nums">
-        <span className={cx("font-semibold", done >= need ? "text-brand" : have >= need ? "text-good" : "text-ink")}>{have}</span>
-        <span className="text-muted">/{need}</span>
+    <div>
+      <p className="mb-1 text-sm">
+        <DoneCount done={done} scheduled={scheduled} need={need} color={color} />
       </p>
       <Bar value={done} soft={scheduled} max={need} color={color} />
     </div>

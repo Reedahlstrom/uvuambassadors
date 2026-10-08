@@ -19,6 +19,34 @@ export function NeedsLine({ tally, reqs, status, className }: { tally: Tally; re
   );
 }
 
+/** "5 +2 /7": done (solid), signed up but not done yet (light), required */
+export function DoneCount({ done, scheduled, need, color }: { done: number; scheduled: number; need: number; color: string }) {
+  return (
+    <span className="tabular-nums" title={`${done} done · ${scheduled} signed up · ${need} needed`}>
+      <b className={cx("font-semibold", done >= need ? "text-brand" : "text-ink")}>{Math.min(done, 99)}</b>
+      {scheduled > 0 && (
+        <span className="ml-1 font-medium" style={{ color: `color-mix(in srgb, ${color} 55%, white)` }}>
+          +{scheduled}
+        </span>
+      )}
+      <span className="text-muted">/{need}</span>
+    </span>
+  );
+}
+
+export function DoneLegend({ className }: { className?: string }) {
+  return (
+    <div className={cx("flex items-center gap-4 text-xs text-muted", className)}>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-3.5 rounded-full bg-ink-2" /> Done
+      </span>
+      <span className="flex items-center gap-1.5">
+        <span className="h-2 w-3.5 rounded-full bg-ink-2/30" /> Signed up, not done yet
+      </span>
+    </div>
+  );
+}
+
 const ROWS = [
   { key: "tour", label: "Tours", color: "var(--color-tour)" },
   { key: "event", label: "Events", color: "var(--color-event)" },
@@ -32,12 +60,15 @@ export function ProgressCard({
   status,
   title,
   className,
+  onPick,
 }: {
   tally: Tally;
   reqs: Reqs;
   status: Status;
   title: string;
   className?: string;
+  /** Calendar: tap a row to show only that kind of item */
+  onPick?: (type: "tour" | "event" | "hs_visit") => void;
 }) {
   return (
     <div className={cx("rounded-2xl border border-line bg-white p-5 shadow-soft", className)}>
@@ -48,31 +79,35 @@ export function ProgressCard({
       <div className="space-y-3.5">
         {ROWS.map((r) => {
           const t = tally[r.key];
-          const have = t.done + t.scheduled;
           const need = reqs[r.key];
-          return (
-            <div key={r.key} className={cx("sub" in r && r.sub && "pl-4")}>
+          const pickType = r.key === "hs_visit_ac" ? "hs_visit" : r.key;
+          const body = (
+            <>
               <div className="mb-1.5 flex items-baseline justify-between text-[14px]">
-                <span className={cx("sub" in r && r.sub ? "text-muted" : "font-medium text-ink-2")}>{r.label}</span>
-                <span className="tabular-nums text-ink">
-                  <b className="font-semibold">{Math.min(have, 99)}</b>
-                  <span className="text-muted">/{need}</span>
-                </span>
+                <span className={cx("sub" in r && r.sub ? "text-muted" : "font-medium text-ink-2", onPick && "group-hover:text-brand")}>{r.label}</span>
+                <DoneCount done={t.done} scheduled={t.scheduled} need={need} color={r.color} />
               </div>
               <Bar value={t.done} soft={t.scheduled} max={need} color={r.color} />
+            </>
+          );
+          return onPick ? (
+            <button
+              key={r.key}
+              onClick={() => onPick(pickType)}
+              title={`Show ${r.label.toLowerCase()} on the calendar`}
+              className={cx("group -mx-2 block w-[calc(100%+1rem)] rounded-xl px-2 py-1 text-left hover:bg-canvas", "sub" in r && r.sub && "pl-6")}
+            >
+              {body}
+            </button>
+          ) : (
+            <div key={r.key} className={cx("sub" in r && r.sub && "pl-4")}>
+              {body}
             </div>
           );
         })}
       </div>
       <NeedsLine tally={tally} reqs={reqs} status={status} className="mt-4 rounded-xl bg-canvas px-3 py-2.5" />
-      <div className="mt-3 flex items-center gap-4 text-xs text-muted">
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-3.5 rounded-full bg-ink-2" /> Done
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="h-2 w-3.5 rounded-full bg-ink-2/30" /> Signed up
-        </span>
-      </div>
+      <DoneLegend className="mt-3" />
     </div>
   );
 }
@@ -86,9 +121,8 @@ export function ProgressStrip({ tally, reqs, status }: { tally: Tally; reqs: Req
           const t = tally[r.key];
           return (
             <div key={r.key} className="min-w-0 text-center">
-              <p className="tabular-nums text-[17px] font-semibold text-ink">
-                {t.done + t.scheduled}
-                <span className="text-sm font-normal text-muted">/{reqs[r.key]}</span>
+              <p className="text-[15px]">
+                <DoneCount done={t.done} scheduled={t.scheduled} need={reqs[r.key]} color={r.color} />
               </p>
               <p className="truncate text-[11px] text-muted">{r.key === "hs_visit" ? "HS visits" : r.key === "hs_visit_ac" ? "With AC" : r.label}</p>
               <div className="mt-1.5">

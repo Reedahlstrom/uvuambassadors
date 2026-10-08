@@ -28,7 +28,7 @@ const DEFAULTS: Record<Initial["type"], { title: string; spots: string; start: s
   calendar: { title: "", spots: "", start: "17:00", end: "18:00" },
 };
 
-export function EventForm({ initial, today }: { initial?: Initial; today: string }) {
+export function EventForm({ initial, today, initialDate }: { initial?: Initial; today: string; initialDate?: string }) {
   const [state, action, saving] = useActionState<FormState, FormData>(saveEvent, {});
   const [type, setType] = useState<Initial["type"]>(initial?.type ?? "tour");
   const [title, setTitle] = useState(initial?.title ?? DEFAULTS.tour.title);
@@ -87,7 +87,7 @@ export function EventForm({ initial, today }: { initial?: Initial; today: string
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Date">
-            <input type="date" name="date" defaultValue={initial?.date ?? today} className={inputClass} required />
+            <input type="date" name="date" defaultValue={initial?.date ?? initialDate ?? today} className={inputClass} required />
           </Field>
           {!allDay && (
             <>

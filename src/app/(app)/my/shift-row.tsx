@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { MapPin } from "lucide-react";
-import { dropSignup } from "@/app/actions/signups";
+import { dropSignup, markNoShow } from "@/app/actions/signups";
 import { useSignupActions } from "@/components/calendar/event-panel";
 import { typeMeta } from "@/components/calendar/shared";
 import { Button, cx } from "@/components/ui";
@@ -20,7 +20,8 @@ type Shift = {
   noShow: boolean;
 };
 
-export function ShiftRow({ shift, canDrop }: { shift: Shift; canDrop?: boolean }) {
+/** canMark = the person's manager or an admin, looking at a shift that already happened */
+export function ShiftRow({ shift, canDrop, canMark }: { shift: Shift; canDrop?: boolean; canMark?: { userId: string } }) {
   const meta = typeMeta(shift.type);
   const [confirm, setConfirm] = useState(false);
   const { pendingId, run } = useSignupActions();
@@ -28,7 +29,7 @@ export function ShiftRow({ shift, canDrop }: { shift: Shift; canDrop?: boolean }
   const [month, day] = monthDay.split(" ");
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3.5 sm:px-5">
+    <div className="group flex items-center gap-4 px-4 py-3.5 sm:px-5">
       <div className="flex w-12 shrink-0 flex-col items-center rounded-xl py-1.5" style={{ background: `color-mix(in srgb, ${meta.color} 10%, white)` }}>
         <span className="text-[11px] font-medium uppercase" style={{ color: meta.color }}>
           {month}
@@ -48,6 +49,17 @@ export function ShiftRow({ shift, canDrop }: { shift: Shift; canDrop?: boolean }
         )}
       </div>
       {shift.noShow && <span className="text-sm text-bad">No-show</span>}
+      {canMark && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cx(!shift.noShow && "md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100")}
+          disabled={pendingId !== null}
+          onClick={() => run(shift.id, () => markNoShow(shift.id, canMark.userId, !shift.noShow))}
+        >
+          {shift.noShow ? "Undo" : "No-show"}
+        </Button>
+      )}
       {canDrop &&
         (confirm ? (
           <div className="flex gap-1.5">

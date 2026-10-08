@@ -97,7 +97,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
             {done.length ? (
               <Card className="divide-y divide-line overflow-hidden">
                 {done.map((r) => (
-                  <ShiftRow key={r.event.id} shift={toRow(r)} />
+                  <ShiftRow key={r.event.id} shift={toRow(r)} canMark={{ userId: person.id }} />
                 ))}
               </Card>
             ) : (

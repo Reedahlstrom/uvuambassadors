@@ -4,6 +4,8 @@ import { useActionState, useTransition } from "react";
 import { demoLogin, requestLogin, verifyCode, type LoginState } from "@/app/actions/auth";
 import { Button, inputClass } from "@/components/ui";
 
+const DEMO_LABEL = { ambassador: ["Reed", "Ambassador"], manager: ["Javi", "Manager"], admin: ["Program", "Admin"] } as const;
+
 export function LoginForm({ demo, expired }: { demo: boolean; expired: boolean }) {
   const [emailState, sendCode, sending] = useActionState<LoginState, FormData>(requestLogin, { step: "email" });
   const [codeState, checkCode, checking] = useActionState<LoginState, FormData>(verifyCode, { step: "code" });
@@ -82,9 +84,10 @@ export function LoginForm({ demo, expired }: { demo: boolean; expired: boolean }
                 size="sm"
                 disabled={demoPending}
                 onClick={() => startDemo(() => demoLogin(r))}
-                className="capitalize"
+                className="h-auto flex-col gap-0 py-2"
               >
-                {r}
+                <span>{DEMO_LABEL[r][0]}</span>
+                <span className="text-xs font-normal opacity-75">{DEMO_LABEL[r][1]}</span>
               </Button>
             ))}
           </div>

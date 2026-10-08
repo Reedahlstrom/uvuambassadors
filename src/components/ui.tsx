@@ -69,7 +69,7 @@ export function Bar({ value, max, color = "var(--color-brand)", soft }: { value:
       {softPct > 0 && (
         <div
           className="h-full rounded-r-full"
-          style={{ width: `${softPct}%`, background: color, opacity: 0.28, marginLeft: pct > 0 ? -2 : 0 }}
+          style={{ width: `${softPct}%`, background: color, opacity: 0.35, marginLeft: pct > 0 ? -2 : 0 }}
         />
       )}
     </div>

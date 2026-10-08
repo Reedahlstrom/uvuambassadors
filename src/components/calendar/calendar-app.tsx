@@ -1,13 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronLeft, ChevronRight, SlidersHorizontal, X } from "lucide-react";
-import { addDays, addMonths, dateShort, dayKey, monthTitle, timeRange, timeShort, weekdayOf } from "@/lib/dates";
+import { Check, ChevronLeft, ChevronRight, Plus, SlidersHorizontal, X } from "lucide-react";
+import { addDays, addMonths, dateShort, dateToUtah, dayKey, monthTitle, timeRange, timeShort, utahToDate, weekdayOf } from "@/lib/dates";
 import { semesterElapsed, statusOf, tally, type Reqs } from "@/lib/progress";
 import { ProgressCard, ProgressStrip } from "../progress-card";
 import { Button, cx } from "../ui";
 import { EventPanel, useSignupActions } from "./event-panel";
 import { signUp } from "@/app/actions/signups";
+import { moveEvent } from "@/app/actions/admin";
 import {
   groupByDay,
   isMine,
@@ -55,6 +57,40 @@ export function CalendarApp({
   const [mobileDay, setMobileDay] = useState(today);
   const [dayOpen, setDayOpen] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  // Admin drag and drop: show the move right away, the server catches up
+  const [moved, setMoved] = useState<Record<string, string>>({});
+  const { run: runMove } = useSignupActions();
+  const canMove = role === "admin";
+  const moveTo = (id: string, day: string) => {
+    const e = events.find((x) => x.id === id);
+    // One move at a time per item; compare with where it's shown now
+    if (!e || id in moved || dayKey(e.startsAt) === day) return;
+    setMoved((m) => ({ ...m, [id]: day }));
+    runMove(id, () => moveEvent(id, day), () =>
+      setMoved((m) => {
+        const n = { ...m };
+        delete n[id];
+        return n;
+      }),
+    );
+  };
+  const shown = useMemo(
+    () =>
+      events.map((e) => {
+        const day = moved[e.id];
+        if (!day) return e;
+        // Same Utah wall-clock times on the new day (matches the server, DST-safe)
+        const a = dateToUtah(e.startsAt);
+        const b = dateToUtah(e.endsAt);
+        const span = Math.round((new Date(b.date + "T12:00:00Z").getTime() - new Date(a.date + "T12:00:00Z").getTime()) / 86_400_000);
+        return {
+          ...e,
+          startsAt: utahToDate(day, a.time).toISOString(),
+          endsAt: utahToDate(addDays(day, span), b.time).toISOString(),
+        };
+      }),
+    [events, moved],
+  );
 
   // Remember view + filters on this device
   useEffect(() => {
@@ -77,19 +113,19 @@ export function CalendarApp({
 
   const visible = useMemo(
     () =>
-      events.filter((e) => {
+      shown.filter((e) => {
         if (!prefs.types[e.type]) return false;
         if (prefs.show === "mine") return isMine(e, me);
         if (prefs.show === "open") return isOpen(e, now);
         return true;
       }),
-    [events, prefs, me, now],
+    [shown, prefs, me, now],
   );
   const byDay = useMemo(() => groupByDay(visible), [visible]);
 
   const myProgress = useMyProgress(events, me, semester, reqs);
 
-  const selected = selectedId ? events.find((e) => e.id === selectedId) : null;
+  const selected = selectedId ? shown.find((e) => e.id === selectedId) : null;
   const showProgress = role === "ambassador";
 
   // ----- navigation -----
@@ -114,12 +150,20 @@ export function CalendarApp({
         : "Coming up";
 
   const filterPanel = <Filters prefs={prefs} update={update} />;
+  const onlyType = TYPES.filter((t) => prefs.types[t.key]);
+  const pickType = (type: EventType) => {
+    update({ show: "all", types: { tour: false, event: false, hs_visit: false, calendar: false, [type]: true } });
+    setFiltersOpen(false);
+  };
+  const showEverything = () => update({ show: "all", types: DEFAULT_PREFS.types });
 
   return (
     <div className="flex gap-6">
       {/* ---------- Left side ---------- */}
       <aside className="sticky top-24 hidden w-[272px] shrink-0 space-y-4 self-start lg:block">
-        {showProgress && <ProgressCard title={semester.name} tally={myProgress.tally} reqs={reqs} status={myProgress.status} />}
+        {showProgress && (
+          <ProgressCard title={semester.name} tally={myProgress.tally} reqs={reqs} status={myProgress.status} onPick={pickType} />
+        )}
         <div className="rounded-2xl border border-line bg-white p-5 shadow-soft">{filterPanel}</div>
       </aside>
 
@@ -163,6 +207,16 @@ export function CalendarApp({
           </Button>
         </div>
 
+        {onlyType.length === 1 && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm shadow-soft">
+            <span className="h-2 w-2 rounded-full" style={{ background: onlyType[0].color }} />
+            <span className="font-medium text-ink">{onlyType[0].label} only</span>
+            <button onClick={showEverything} className="ml-auto font-medium text-brand hover:underline">
+              Show everything
+            </button>
+          </div>
+        )}
+
         {prefs.view === "month" && (
           <>
             <MonthGrid
@@ -175,8 +229,9 @@ export function CalendarApp({
               onMore={setDayOpen}
               mobileDay={mobileDay}
               setMobileDay={setMobileDay}
+              onMove={canMove ? moveTo : undefined}
             />
-            <Legend />
+            <Legend canMove={canMove} />
             <div className="mt-4 md:hidden">
               <DayGroup day={mobileDay} today={today} events={byDay.get(mobileDay) ?? []} me={me} now={now} onSelect={setSelectedId} showEmpty />
             </div>
@@ -185,8 +240,8 @@ export function CalendarApp({
 
         {prefs.view === "week" && (
           <>
-            <WeekView weekStart={weekStart} today={today} byDay={byDay} me={me} now={now} onSelect={setSelectedId} />
-            <Legend />
+            <WeekView weekStart={weekStart} today={today} byDay={byDay} me={me} now={now} onSelect={setSelectedId} onMove={canMove ? moveTo : undefined} />
+            <Legend canMove={canMove} />
           </>
         )}
 
@@ -305,7 +360,7 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
   );
 }
 
-function Legend() {
+function Legend({ canMove }: { canMove?: boolean }) {
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-1.5 px-1 text-[13px] text-muted">
       <span className="flex items-center gap-1.5">
@@ -318,8 +373,9 @@ function Legend() {
         <span className="h-2 w-2 rounded-full bg-brand" /> Open, tap to sign up
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="h-2 w-2 rounded-full border border-faint" /> Full
+        <span className="h-2 w-2 rounded-full border border-faint" /> Grey = full or already happened, tap for details
       </span>
+      {canMove && <span className="hidden md:inline">Drag to change the date · + to add</span>}
     </div>
   );
 }
@@ -338,6 +394,7 @@ function MonthGrid({
   onMore,
   mobileDay,
   setMobileDay,
+  onMove,
 }: {
   monthStart: string;
   today: string;
@@ -348,7 +405,9 @@ function MonthGrid({
   onMore: (day: string) => void;
   mobileDay: string;
   setMobileDay: (d: string) => void;
+  onMove?: (id: string, day: string) => void;
 }) {
+  const drop = useDrop(onMove);
   const first = weekdayOf(monthStart);
   const gridStart = addDays(monthStart, -first);
   const nextMonth = addMonths(monthStart, 1);
@@ -377,11 +436,13 @@ function MonthGrid({
           return (
             <div
               key={d}
+              {...drop.target(d)}
               className={cx(
-                "relative min-w-0",
+                "group/day relative min-w-0",
                 !lastCol && "border-r border-line",
                 !lastRow && "border-b border-line",
                 !inMonth && "bg-[#fafafa]",
+                drop.over === d && "bg-brand-soft ring-2 ring-brand ring-inset",
               )}
             >
               {/* Phone: compact cell */}
@@ -405,12 +466,24 @@ function MonthGrid({
 
               {/* Desktop: chips */}
               <div className="hidden min-h-[132px] p-1.5 md:block">
-                <div className="mb-1 flex justify-end px-1">
+                <div className="mb-1 flex items-center justify-between px-1">
+                  {onMove ? (
+                    <Link
+                      href={`/admin/events/new?date=${d}`}
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-muted opacity-0 group-hover/day:opacity-100 hover:bg-brand-soft hover:text-brand"
+                      aria-label="Add on this day"
+                      title="Add on this day"
+                    >
+                      <Plus size={15} />
+                    </Link>
+                  ) : (
+                    <span />
+                  )}
                   <DayNumber d={d} isToday={isToday} inMonth={inMonth} />
                 </div>
                 <div className="space-y-[3px]">
                   {list.slice(0, list.length > MAX ? MAX - 1 : MAX).map((e) => (
-                    <Chip key={e.id + d} e={e} me={me} now={now} onClick={() => onSelect(e.id)} />
+                    <Chip key={e.id + d} e={e} me={me} now={now} onClick={() => onSelect(e.id)} drag={drop.source(e)} />
                   ))}
                   {list.length > MAX && (
                     <button onClick={() => onMore(d)} className="w-full rounded-md px-1.5 py-0.5 text-left text-xs font-medium text-muted hover:bg-canvas hover:text-ink">
@@ -440,7 +513,7 @@ function DayNumber({ d, isToday, inMonth }: { d: string; isToday: boolean; inMon
   );
 }
 
-function Chip({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; onClick: () => void }) {
+function Chip({ e, me, now, onClick, drag }: { e: CalEvent; me: string; now: number; onClick: () => void; drag?: DragProps }) {
   const meta = typeMeta(e.type);
   const mine = isMine(e, me);
   const full = takesSignups(e) && spotsLeft(e) === 0 && !mine;
@@ -450,17 +523,19 @@ function Chip({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; o
   return (
     <button
       onClick={onClick}
+      {...drag}
       title={`${e.allDay ? "" : timeShort(e.startsAt) + " "}${e.title}${status ? ` · ${status}` : ""}`}
       className={cx(
         "flex w-full items-center gap-1.5 overflow-hidden rounded-md px-1.5 py-[3px] text-left text-[12.5px] leading-tight transition hover:brightness-95",
+        drag?.draggable && "cursor-grab active:cursor-grabbing",
         past && !mine && "opacity-60",
       )}
       style={
         mine
           ? { background: meta.color, color: "white" }
           : muted
-            ? { background: "var(--color-canvas)", color: "var(--color-muted)" }
-            : { background: `color-mix(in srgb, ${meta.color} 12%, white)`, color: "var(--color-ink)" }
+            ? { background: "var(--color-canvas)", color: "var(--color-faint)" }
+            : { background: `color-mix(in srgb, ${meta.color} 18%, white)`, color: "var(--color-ink)", boxShadow: `inset 2px 0 0 ${meta.color}` }
       }
     >
       {mine ? (
@@ -477,6 +552,50 @@ function Chip({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; o
 }
 
 // ---------------------------------------------------------------------------
+// Drag and drop (admins, desktop): move an item to another day
+// ---------------------------------------------------------------------------
+
+type DragProps = { draggable: boolean; onDragStart?: (ev: React.DragEvent) => void };
+const DRAG_TYPE = "application/x-ua-event";
+
+function useDrop(onMove?: (id: string, day: string) => void) {
+  const [over, setOver] = useState<string | null>(null);
+  return {
+    over,
+    source: (e: CalEvent): DragProps | undefined =>
+      onMove && e.source !== "outlook"
+        ? {
+            draggable: true,
+            onDragStart: (ev) => {
+              ev.dataTransfer.setData(DRAG_TYPE, e.id);
+              ev.dataTransfer.effectAllowed = "move";
+            },
+          }
+        : undefined,
+    target: (day: string) =>
+      onMove
+        ? {
+            onDragOver: (ev: React.DragEvent) => {
+              if (!ev.dataTransfer.types.includes(DRAG_TYPE)) return;
+              ev.preventDefault();
+              ev.dataTransfer.dropEffect = "move";
+              if (over !== day) setOver(day);
+            },
+            onDragLeave: (ev: React.DragEvent) => {
+              if (!(ev.currentTarget as HTMLElement).contains(ev.relatedTarget as Node)) setOver((o) => (o === day ? null : o));
+            },
+            onDrop: (ev: React.DragEvent) => {
+              ev.preventDefault();
+              setOver(null);
+              const id = ev.dataTransfer.getData(DRAG_TYPE);
+              if (id) onMove(id, day);
+            },
+          }
+        : {},
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Week
 // ---------------------------------------------------------------------------
 
@@ -487,6 +606,7 @@ function WeekView({
   me,
   now,
   onSelect,
+  onMove,
 }: {
   weekStart: string;
   today: string;
@@ -494,7 +614,9 @@ function WeekView({
   me: string;
   now: number;
   onSelect: (id: string) => void;
+  onMove?: (id: string, day: string) => void;
 }) {
+  const drop = useDrop(onMove);
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   return (
     <>
@@ -503,14 +625,14 @@ function WeekView({
           const list = byDay.get(d) ?? [];
           const isToday = d === today;
           return (
-            <div key={d} className="min-w-0">
+            <div key={d} {...drop.target(d)} className={cx("min-h-[200px] min-w-0 rounded-xl", drop.over === d && "bg-brand-soft ring-2 ring-brand")}>
               <div className={cx("mb-2 rounded-xl px-2 py-2 text-center", isToday ? "bg-brand text-white" : "text-ink-2")}>
                 <p className={cx("text-xs font-medium uppercase", isToday ? "text-white/80" : "text-muted")}>{WEEKDAYS[weekdayOf(d)]}</p>
                 <p className="text-lg font-semibold tabular-nums">{Number(d.slice(8))}</p>
               </div>
               <div className="space-y-2">
                 {list.map((e) => (
-                  <WeekCard key={e.id} e={e} me={me} now={now} onClick={() => onSelect(e.id)} />
+                  <WeekCard key={e.id} e={e} me={me} now={now} onClick={() => onSelect(e.id)} drag={drop.source(e)} />
                 ))}
               </div>
             </div>
@@ -526,7 +648,7 @@ function WeekView({
   );
 }
 
-function WeekCard({ e, me, now, onClick }: { e: CalEvent; me: string; now: number; onClick: () => void }) {
+function WeekCard({ e, me, now, onClick, drag }: { e: CalEvent; me: string; now: number; onClick: () => void; drag?: DragProps }) {
   const meta = typeMeta(e.type);
   const mine = isMine(e, me);
   const left = spotsLeft(e);
@@ -534,8 +656,10 @@ function WeekCard({ e, me, now, onClick }: { e: CalEvent; me: string; now: numbe
   return (
     <button
       onClick={onClick}
+      {...drag}
       className={cx(
         "w-full rounded-xl border p-2.5 text-left transition hover:shadow-soft",
+        drag?.draggable && "cursor-grab active:cursor-grabbing",
         mine ? "border-transparent text-white" : "border-line bg-white",
         past && !mine && "opacity-60",
       )}
