@@ -1,6 +1,6 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, asc, count, desc, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { consumeLoginCode, consumeLoginToken, createLoginToken, endSession, recentLoginRequests, startSession } from "@/lib/auth";
 import { DEMO_EMAILS, DEMO_MODE } from "@/lib/config";
@@ -69,12 +69,27 @@ export async function verifyLink(token: string) {
   redirect(landingFor(user));
 }
 
+async function firstWithRole(role: "ambassador" | "manager" | "admin") {
+  const db = await getDb();
+  const [row] = await db
+    .select({ user: schema.users })
+    .from(schema.users)
+    .leftJoin(schema.signups, eq(schema.signups.userId, schema.users.id))
+    .where(and(eq(schema.users.role, role), eq(schema.users.active, true)))
+    .groupBy(schema.users.id)
+    .orderBy(desc(count(schema.signups.id)), asc(schema.users.name))
+    .limit(1);
+  return row?.user ?? null;
+}
+
 export async function demoLogin(role: "ambassador" | "manager" | "admin") {
   if (!DEMO_MODE) throw new Error("Demo login is off");
-  const user = await findUser(DEMO_EMAILS[role]);
-  if (!user) throw new Error("Demo user missing — run npm run db:seed");
+  // On a local copy of real data there are no demo people, so use a real person with that role
+  // (for ambassadors, the one with the most sign-ups so there's something to look at).
+  const user = (await findUser(DEMO_EMAILS[role])) ?? (await firstWithRole(role));
+  if (!user) throw new Error(`No ${role} in this database`);
   await startSession(user.id);
-  redirect("/signup");
+  redirect(landingFor(user));
 }
 
 export async function signOut() {
