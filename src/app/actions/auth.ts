@@ -36,7 +36,7 @@ export async function requestLogin(_prev: LoginState, form: FormData): Promise<L
 
   const { token, code } = await createLoginToken(user.id);
   const url = `${await baseUrl()}/auth/verify?token=${token}`;
-  await sendEmail({
+  const sent = await sendEmail({
     to: user.email,
     toUserId: user.id,
     kind: "login",
@@ -45,6 +45,7 @@ export async function requestLogin(_prev: LoginState, form: FormData): Promise<L
     lines: ["Enter this code to sign in, or tap the button below.", "It expires in 30 minutes."],
     button: { label: "Sign in", url },
   });
+  if (!sent) return { step: "email", email, error: "We couldn't send your code. Try again in a minute." };
   return { step: "code", email, devCode: !emailEnabled && DEMO_MODE ? code : undefined };
 }
 

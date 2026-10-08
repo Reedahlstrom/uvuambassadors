@@ -18,6 +18,11 @@ const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KE
 
 export const emailEnabled = !!resend;
 
+// Until the domain is verified in Resend, its test sender still reaches the Resend account owner.
+// Once the domain is verified this fallback is never used.
+const FALLBACK_FROM = "UVU Ambassadors <onboarding@resend.dev>";
+const unverified = (error: { message?: string } | null) => !!error?.message?.includes("not verified");
+
 function escape(s: string) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
@@ -50,9 +55,9 @@ export async function sendEmails(list: Mail[]): Promise<number> {
     const chunk = list.slice(i, i + 100);
     let ok = !resend;
     if (resend) {
-      const { error } = await resend.batch.send(
-        chunk.map((m) => ({ from: EMAIL_FROM, to: m.to, subject: m.subject, html: render(m), text: toText(m) })),
-      );
+      const build = (from: string) => chunk.map((m) => ({ from, to: m.to, subject: m.subject, html: render(m), text: toText(m) }));
+      let { error } = await resend.batch.send(build(EMAIL_FROM));
+      if (unverified(error)) ({ error } = await resend.batch.send(build(FALLBACK_FROM)));
       if (error) console.error("Batch email failed", error);
       ok = !error;
     } else {
@@ -76,7 +81,9 @@ export async function sendEmail(m: Mail): Promise<boolean> {
   const text = toText(m);
   let delivered = false;
   if (resend) {
-    const { error } = await resend.emails.send({ from: EMAIL_FROM, to: m.to, subject: m.subject, html: render(m), text });
+    const build = (from: string) => ({ from, to: m.to, subject: m.subject, html: render(m), text });
+    let { error } = await resend.emails.send(build(EMAIL_FROM));
+    if (unverified(error)) ({ error } = await resend.emails.send(build(FALLBACK_FROM)));
     if (error) console.error("Email failed", m.to, error);
     delivered = !error;
   } else {
