@@ -112,14 +112,30 @@ export function ProgressCard({
 }
 
 /** One-line version for phones */
-export function ProgressStrip({ tally, reqs, status }: { tally: Tally; reqs: Reqs; status: Status }) {
+export function ProgressStrip({
+  tally,
+  reqs,
+  status,
+  onPick,
+}: {
+  tally: Tally;
+  reqs: Reqs;
+  status: Status;
+  onPick?: (type: "tour" | "event" | "hs_visit") => void;
+}) {
   return (
     <div className="rounded-2xl border border-line bg-white p-3 shadow-soft">
       <div className="grid grid-cols-4 gap-2">
         {ROWS.map((r) => {
           const t = tally[r.key];
           return (
-            <div key={r.key} className="min-w-0 text-center">
+            <button
+              key={r.key}
+              type="button"
+              disabled={!onPick}
+              onClick={() => onPick?.(r.key === "hs_visit_ac" ? "hs_visit" : r.key)}
+              className="min-w-0 rounded-xl py-1 text-center enabled:active:bg-canvas"
+            >
               <p className="text-[15px]">
                 <DoneCount done={t.done} scheduled={t.scheduled} need={reqs[r.key]} color={r.color} />
               </p>
@@ -127,7 +143,7 @@ export function ProgressStrip({ tally, reqs, status }: { tally: Tally; reqs: Req
               <div className="mt-1.5">
                 <Bar value={t.done} soft={t.scheduled} max={reqs[r.key]} color={r.color} />
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

@@ -84,7 +84,7 @@ const statusStyle: Record<Status, string> = {
 
 export function StatusPill({ status }: { status: Status }) {
   return (
-    <span className={cx("inline-flex h-7 items-center rounded-full px-3 text-[13px] font-medium", statusStyle[status])}>
+    <span className={cx("inline-flex h-7 shrink-0 items-center rounded-full px-3 text-[13px] font-medium whitespace-nowrap", statusStyle[status])}>
       {STATUS_LABEL[status]}
     </span>
   );

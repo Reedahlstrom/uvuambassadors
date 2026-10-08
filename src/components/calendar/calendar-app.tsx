@@ -171,7 +171,7 @@ export function CalendarApp({
       <section className="min-w-0 flex-1">
         {showProgress && (
           <div className="mb-4 lg:hidden">
-            <ProgressStrip tally={myProgress.tally} reqs={reqs} status={myProgress.status} />
+            <ProgressStrip tally={myProgress.tally} reqs={reqs} status={myProgress.status} onPick={pickType} />
           </div>
         )}
 
@@ -767,10 +767,10 @@ export function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now
   const busy = pendingId === e.id;
 
   return (
-    <div className={cx("flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-4", past && !mine && "opacity-60")}>
-      <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-3 text-left sm:gap-4">
+    <div className={cx("flex items-center gap-2.5 px-3 py-3 sm:gap-4 sm:px-4", past && !mine && "opacity-60")}>
+      <button onClick={onClick} className="flex min-w-0 flex-1 items-center gap-2.5 text-left sm:gap-4">
         <span className="h-10 w-1 shrink-0 rounded-full" style={{ background: meta.color }} />
-        <span className="w-[68px] shrink-0 text-[13px] leading-tight text-muted tabular-nums sm:w-[84px]">
+        <span className="w-[54px] shrink-0 text-[13px] leading-tight text-muted tabular-nums sm:w-[84px]">
           {e.allDay ? (
             "All day"
           ) : (
@@ -783,7 +783,7 @@ export function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now
         </span>
         <span className="min-w-0">
           <span className="line-clamp-2 block text-[15px] leading-snug font-semibold text-ink sm:truncate">{e.title}</span>
-          <span className="flex items-center gap-1.5 truncate text-[13px] text-muted">
+          <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted sm:flex-nowrap sm:truncate">
             {meta.short}
             {e.withAc && <span className="font-medium text-hs">· With AC</span>}
             {!mine && !past && takesSignups(e) && left > 0 && (

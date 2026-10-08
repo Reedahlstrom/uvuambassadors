@@ -78,7 +78,7 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="order-2 space-y-8 lg:order-1">
           <section>
             <h2 className="mb-3 font-semibold text-ink">Coming up</h2>

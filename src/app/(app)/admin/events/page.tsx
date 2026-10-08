@@ -87,12 +87,17 @@ export default async function AdminEvents({ searchParams }: { searchParams: Prom
             return (
               <div key={e.id}>
                 {showDay && <p className="bg-canvas/70 px-5 py-2 text-[13px] font-semibold text-ink-2">{dateShort(e.startsAt)}</p>}
-                <Link href={`/admin/events/${e.id}`} className="flex items-center gap-4 px-5 py-3 hover:bg-canvas/60">
+                <Link href={`/admin/events/${e.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-canvas/60 sm:gap-4 sm:px-5">
                   <Dot color={TYPE_META[e.type].color} size={10} />
-                  <span className="w-[130px] shrink-0 text-sm text-muted tabular-nums">{timeRange(e.startsAt, e.endsAt, e.allDay)}</span>
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">
-                    {e.title}
-                    {e.withAc && <span className="ml-2 text-sm font-normal text-hs">With AC</span>}
+                  {/* Phone: title on top, time underneath. Wider: time column, then title. */}
+                  <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-4">
+                    <span className="order-2 text-[13px] text-muted tabular-nums sm:order-1 sm:w-[130px] sm:shrink-0 sm:text-sm">
+                      {timeRange(e.startsAt, e.endsAt, e.allDay)}
+                    </span>
+                    <span className="order-1 min-w-0 truncate text-[15px] font-medium text-ink sm:order-2 sm:flex-1">
+                      {e.title}
+                      {e.withAc && <span className="ml-2 text-sm font-normal text-hs">With AC</span>}
+                    </span>
                   </span>
                   {e.spots != null ? (
                     <span

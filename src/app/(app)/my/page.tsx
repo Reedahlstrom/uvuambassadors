@@ -49,7 +49,7 @@ export default async function MyShiftsPage() {
   return (
     <div>
       <PageTitle>My events</PageTitle>
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">
           <section>
             <h2 className="mb-3 font-semibold text-ink">Coming up</h2>

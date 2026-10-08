@@ -14,8 +14,8 @@ const tabs = [
 export function AdminTabs() {
   const path = usePathname();
   return (
-    <div className="-mx-4 mb-6 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-      <div className="inline-flex gap-1 rounded-2xl border border-line bg-white p-1 shadow-soft">
+    <div className="mb-6">
+      <div className="grid grid-cols-4 gap-1 rounded-2xl border border-line bg-white p-1 shadow-soft sm:inline-grid">
         {tabs.map((t) => {
           const active = t.href === "/admin" ? path === "/admin" : path.startsWith(t.href);
           return (
@@ -23,7 +23,7 @@ export function AdminTabs() {
               key={t.href}
               href={t.href}
               className={cx(
-                "rounded-xl px-4 py-2 text-[15px] font-medium whitespace-nowrap transition-colors",
+                "rounded-xl px-1 py-2 text-center text-[13px] font-medium whitespace-nowrap transition-colors min-[380px]:text-[14px] sm:px-4 sm:text-[15px]",
                 active ? "bg-brand text-white" : "text-ink-2 hover:bg-canvas",
               )}
             >
