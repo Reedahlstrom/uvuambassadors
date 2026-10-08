@@ -10,7 +10,7 @@
   // Postgres connection pooler. Create with:
   //   npx wrangler hyperdrive create uvuambassadors-db --connection-string="<DATABASE_URL>"
   // and paste the id here.
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "db0fde50169c4891b531abae28dde73d" }],
   // 14:00 UTC = 8am Utah (MDT) / 7am (MST)
   "triggers": { "crons": ["0 14 * * *"] },
   "routes": [

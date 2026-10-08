@@ -3,6 +3,7 @@ node_modules
 .data
 .env
 .env.local
+.env.neon
 *.tsbuildinfo
 next-env.d.ts
 .vercel
@@ -15,3 +16,4 @@ data-private
 .wrangler
 .dev.vars
 .data-ux
+.neon

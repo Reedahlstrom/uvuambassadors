@@ -15,7 +15,8 @@ export default defineConfig({
   },
   webServer: {
     // Fresh demo database every run, on its own port
-    command: "rm -rf .data-test && PGLITE_DIR=.data-test npx tsx scripts/ensure-db.ts && PGLITE_DIR=.data-test npx next dev -p 3100",
+    // DATABASE_URL= keeps tests off the real database even if one is set in .env.local
+    command: "rm -rf .data-test && export DATABASE_URL= PGLITE_DIR=.data-test && npx tsx scripts/ensure-db.ts && npx next dev -p 3100",
     url: "http://localhost:3100/login",
     reuseExistingServer: false,
     timeout: 120_000,

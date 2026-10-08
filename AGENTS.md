@@ -21,6 +21,7 @@ Sign-up + calendar app for ~40 ambassadors, 6 managers, 4 admins. Replaces SignU
 - `npm run db:reset` — wipes only the local demo database
 - `npm run cf:deploy` — build with OpenNext and deploy to Cloudflare Workers (`wrangler.jsonc`, `worker.ts` = app + daily cron). Postgres goes through Hyperdrive (binding `HYPERDRIVE`); on Workers `getDb()` opens one connection per request.
 - Real data: `PGLITE_DIR=.data-real npm run dev` locally; `scripts/import-signupgenius.ts` loads `data-private/` (gitignored — real names, never commit)
+- Live database: Neon project `shy-tooth-25804767` (branch `production`). Its URLs live in `.env.neon` (gitignored), NOT `.env.local`, so dev and tests never touch it. To run a script against it: `set -a; . ./.env.neon; set +a; DATABASE_URL=$DATABASE_URL_UNPOOLED npx tsx scripts/<script>.ts`. Run `neon deploy --no-env-pull` so Neon doesn't write `.env.local` again.
 
 ## Architecture
 - Next.js 16 App Router, Server Components, Server Actions. **Not** using `cacheComponents`; pages are dynamic (they read the session cookie). After a mutation call `revalidatePath("/", "layout")`.
