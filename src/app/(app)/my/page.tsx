@@ -11,7 +11,7 @@ import { semesterElapsed, statusOf, tally } from "@/lib/progress";
 import { baseUrl } from "@/lib/url";
 import { ShiftRow } from "./shift-row";
 
-export const metadata: Metadata = { title: "My shifts" };
+export const metadata: Metadata = { title: "My events" };
 
 export default async function MyShiftsPage() {
   const user = await requireUser();
@@ -48,7 +48,7 @@ export default async function MyShiftsPage() {
 
   return (
     <div>
-      <PageTitle>My shifts</PageTitle>
+      <PageTitle>My events</PageTitle>
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="space-y-8">
           <section>
@@ -82,7 +82,7 @@ export default async function MyShiftsPage() {
           {user.role === "ambassador" && <ProgressCard title={semester.name} tally={t} reqs={reqs} status={status} />}
           <Card className="p-5">
             <p className="font-semibold text-ink">Add to my calendar</p>
-            <p className="mt-1 mb-4 text-sm text-muted">Your shifts sync to your phone automatically.</p>
+            <p className="mt-1 mb-4 text-sm text-muted">Your events sync to your phone automatically.</p>
             <CalendarSubscribe links={links} />
           </Card>
         </div>

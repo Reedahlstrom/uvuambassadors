@@ -32,7 +32,7 @@ export async function signUp(eventId: string): Promise<ActionResult> {
   const user = await requireUser();
   const r = await addToEvent(eventId, user.id, true);
   revalidatePath("/", "layout");
-  return r.ok ? { ok: true, message: r.message ?? "You're signed up. It's in My shifts." } : r;
+  return r.ok ? { ok: true, message: r.message ?? "You're signed up. It's in My events." } : r;
 }
 
 export async function dropSignup(eventId: string): Promise<ActionResult> {

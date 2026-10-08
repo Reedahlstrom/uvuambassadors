@@ -63,7 +63,7 @@ export async function GET(req: Request) {
         ...(e.notes ? [e.notes] : []),
         "Can't make it? Drop it so someone else can take the spot.",
       ],
-      button: { label: "My shifts", url: `${base}/my` },
+      button: { label: "My events", url: `${base}/my` },
     }));
     return sendEmails(mails);
   });

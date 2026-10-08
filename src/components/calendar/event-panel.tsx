@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
-import { Check, Clock, MapPin, Pencil, UserPlus, X } from "lucide-react";
+import { CalendarPlus, Check, Clock, MapPin, Pencil, UserPlus, X } from "lucide-react";
+import { addEventLinks } from "@/lib/calendar-links";
 import { adminAddPerson, adminRemovePerson, adminSetNoShow, dropSignup, signUp, type ActionResult } from "@/app/actions/signups";
 import { dateLong, timeRange } from "@/lib/dates";
 import { Avatar, Button, cx } from "../ui";
@@ -159,6 +160,8 @@ export function EventPanel({
             </div>
           )}
 
+          {mine && !past && <AddToCalendar event={event} />}
+
           {/* Who's going */}
           {takesSignups(event) && (
             <div className="mt-7">
@@ -263,6 +266,33 @@ function AddPerson({
       >
         <UserPlus size={16} /> Add
       </Button>
+    </div>
+  );
+}
+
+/** Puts this one event in their calendar right away (the subscription can take hours to catch up) */
+function AddToCalendar({ event }: { event: CalEvent }) {
+  const [base, setBase] = useState("");
+  useEffect(() => setBase(window.location.origin), []);
+  if (!base) return null;
+  const links = addEventLinks(base, event);
+  const cls = "flex h-10 items-center justify-center rounded-xl border border-line text-sm font-medium text-ink-2 hover:bg-canvas";
+  return (
+    <div className="mt-4">
+      <p className="mb-2 flex items-center gap-1.5 text-sm text-muted">
+        <CalendarPlus size={15} /> Add to my calendar
+      </p>
+      <div className="grid grid-cols-3 gap-2">
+        <a href={links.outlook} target="_blank" rel="noreferrer" className={cls}>
+          Outlook
+        </a>
+        <a href={links.google} target="_blank" rel="noreferrer" className={cls}>
+          Google
+        </a>
+        <a href={links.apple} className={cls}>
+          Apple
+        </a>
+      </div>
     </div>
   );
 }

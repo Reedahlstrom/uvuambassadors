@@ -11,7 +11,7 @@ export const REQ_LABEL: Record<ReqKey, string> = {
   tour: "Tours",
   event: "Events",
   hs_visit: "HS visits",
-  hs_visit_ac: "With AC",
+  hs_visit_ac: "Of those, with an AC",
 };
 
 export const STATUS_LABEL: Record<Status, string> = {
@@ -77,7 +77,7 @@ export function statusOf(t: Tally, reqs: Reqs, elapsed: number): Status {
   return "on_track";
 }
 
-/** "2 tours, 1 event and 1 high school visit (with an AC)" */
+/** "2 tours, 1 event and 2 high school visits (1 of them with an AC)" */
 export function needsSentence(t: Tally, reqs: Reqs): string {
   const r = remaining(t, reqs);
   const parts: string[] = [];
@@ -87,7 +87,8 @@ export function needsSentence(t: Tally, reqs: Reqs): string {
   if (r.hs_visit || r.hs_visit_ac) {
     const hs = Math.max(r.hs_visit, r.hs_visit_ac);
     let s = plural(hs, "high school visit", "high school visits");
-    if (r.hs_visit_ac) s += ` (${r.hs_visit_ac} with an AC)`;
+    // AC visits are part of the high school visit total, not extra
+    if (r.hs_visit_ac) s += r.hs_visit_ac === hs ? (hs === 1 ? " (with an AC)" : " (all with an AC)") : ` (${r.hs_visit_ac} of them with an AC)`;
     parts.push(s);
   }
   if (parts.length === 0) return "";

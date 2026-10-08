@@ -69,7 +69,7 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   const openBefore = await page.getByRole("button", { name: "Sign up", exact: true }).count();
   expect(openBefore).toBeGreaterThan(0);
   await page.getByRole("button", { name: "Sign up", exact: true }).first().click();
-  await expect(page.getByText("You're signed up. It's in My shifts.")).toBeVisible();
+  await expect(page.getByText("You're signed up. It's in My events.")).toBeVisible();
   await expect(page.getByText("You're in").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Sign up", exact: true })).toHaveCount(openBefore - 1);
   // type filter
@@ -94,7 +94,7 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "All", exact: true }).click();
 
-  // drop from My shifts
+  // drop from My events
   await page.goto("/my");
   const before = await page.getByRole("button", { name: "Drop" }).count();
   await page.getByRole("button", { name: "Drop" }).first().click();
@@ -125,9 +125,14 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   await page.getByRole("checkbox").nth(1).click();
   await page.getByRole("button", { name: "Send reminder" }).click();
   const dlg = page.getByRole("dialog");
-  await expect(dlg.getByText("You still need")).toBeVisible();
-  await dlg.getByRole("button", { name: /^Send to/ }).click();
-  await expect(page.getByText(/Reminder sent to \d/)).toBeVisible();
+  await expect(dlg.locator("textarea")).toHaveValue(/Don't forget to finish signing up for/);
+  await dlg.locator("textarea").fill("Hey! Grab a tour this week.");
+  await dlg.getByRole("button", { name: "Send", exact: true }).click();
+  await expect(page.getByText(/^Sent to /)).toBeVisible();
+  // quick remind from a row, with the draft
+  await page.getByRole("button", { name: "Remind", exact: true }).first().click();
+  await expect(page.getByRole("dialog").locator("textarea")).toHaveValue(/^Hey \S+!/);
+  await page.getByRole("dialog").getByRole("button", { name: "Close" }).last().click();
   // manager can open someone on their team
   await page.locator("table a[href^='/people/']").first().click();
   await expect(page.getByRole("heading", { name: "Coming up" })).toBeVisible();

@@ -19,7 +19,7 @@ export default async function WelcomePage() {
   const tiles = [
     { n: reqs.tour, label: "Tours", color: "var(--color-tour)" },
     { n: reqs.event, label: "Events", color: "var(--color-event)" },
-    { n: reqs.hs_visit, label: "High school visits", sub: `${reqs.hs_visit_ac} with an AC`, color: "var(--color-hs)" },
+    { n: reqs.hs_visit, label: "High school visits", sub: `${reqs.hs_visit_ac} of them with an AC`, color: "var(--color-hs)" },
   ];
 
   return (

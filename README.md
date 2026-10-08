@@ -2,7 +2,7 @@
 
 One place for ambassador sign-ups. Replaces SignUpGenius + the tracking sheets.
 
-- **Ambassadors** see every tour, event, high school visit and Outlook item on one calendar, filter what they see, sign up in one tap, and always know where they stand (7 tours · 6 events · 4 HS visits, 2 with an AC).
+- **Ambassadors** see every tour, event, high school visit and Outlook item on one calendar, filter what they see, sign up in one tap, and always know where they stand (7 tours · 6 events · 4 high school visits, 2 of which are with an AC).
 - **Managers** see their team at a glance and email reminders in two clicks.
 - **Admins** see who's behind, what still needs people, and manage events, people, teams and the semester.
 
@@ -80,6 +80,6 @@ Until this is set, emails (sign-in codes, reminders) print in the terminal inste
 **Rules the app follows**
 - A sign-up counts as *done* once the event ends (admins can mark a no-show from the event panel).
 - *On track* = done + signed up keeps pace with how far into the semester it is. *Behind* = falling behind pace on any requirement.
-- HS visits flagged *With AC* count toward both "HS visits" and "With AC".
+- HS visits flagged *With AC* count toward the 4 HS visits and toward the 2 that must be with an AC (not extra).
 - Outlook items are info-only. An admin can open one and give it spots to make it sign-up-able; the sync keeps that edit.
 - All times are Utah time (`America/Denver`), no matter where the server runs.

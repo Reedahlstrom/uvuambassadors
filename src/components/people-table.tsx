@@ -17,7 +17,7 @@ const REQ_COLS = [
   { key: "tour", label: "Tours", color: "var(--color-tour)" },
   { key: "event", label: "Events", color: "var(--color-event)" },
   { key: "hs_visit", label: "HS visits", color: "var(--color-hs)" },
-  { key: "hs_visit_ac", label: "With AC", color: "var(--color-hs)" },
+  { key: "hs_visit_ac", label: "Of those, AC", color: "var(--color-hs)" },
 ] as const;
 
 export function PeopleTable({
@@ -26,18 +26,22 @@ export function PeopleTable({
   showTeam,
   teams,
   canRemind,
+  senderName,
 }: {
   people: PersonProgress[];
   reqs: Reqs;
   showTeam?: boolean;
   teams?: { id: string; name: string }[];
   canRemind: boolean;
+  /** Signs the reminder draft */
+  senderName?: string;
 }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [team, setTeam] = useState("");
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [composing, setComposing] = useState(false);
+  // null = closed; list = who the reminder goes to
+  const [composing, setComposing] = useState<PersonProgress[] | null>(null);
 
   const base = useMemo(() => people.filter((p) => (!team || p.teamId === team) && (!q || p.name.toLowerCase().includes(q.toLowerCase()))), [people, team, q]);
   const counts = {
@@ -124,7 +128,7 @@ export function PeopleTable({
                   {c.label}
                 </th>
               ))}
-              <th className="w-[130px] py-3 pr-5 font-medium">Status</th>
+              <th className={cx("py-3 pr-5 font-medium", canRemind ? "w-[220px]" : "w-[130px]")}>Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-line">
@@ -157,7 +161,17 @@ export function PeopleTable({
                   </td>
                 ))}
                 <td className="py-3 pr-5">
-                  <StatusPill status={p.status} />
+                  <div className="flex items-center justify-between gap-2">
+                    <StatusPill status={p.status} />
+                    {canRemind && (
+                      <button
+                        onClick={() => setComposing([p])}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-brand hover:bg-brand-soft"
+                      >
+                        <Mail size={15} /> Remind
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -188,6 +202,18 @@ export function PeopleTable({
                 <NextShift next={p.next} />
               </div>
               <StatusPill status={p.status} />
+              {canRemind && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setComposing([p]);
+                  }}
+                  className="rounded-lg p-2 text-brand hover:bg-brand-soft"
+                  aria-label={`Remind ${p.name}`}
+                >
+                  <Mail size={17} />
+                </button>
+              )}
             </div>
             <div className="grid grid-cols-4 gap-3">
               {REQ_COLS.map((c) => (
@@ -206,7 +232,7 @@ export function PeopleTable({
         <div className="anim-sheet fixed inset-x-0 bottom-20 z-40 flex justify-center px-4 md:bottom-6">
           <div className="flex items-center gap-2 rounded-2xl bg-ink py-2 pr-2 pl-4 text-white shadow-pop">
             <span className="mr-2 text-[15px] font-medium tabular-nums">{selected.size} selected</span>
-            <Button size="sm" variant="outline" className="border-transparent" onClick={() => setComposing(true)}>
+            <Button size="sm" variant="outline" className="border-transparent" onClick={() => setComposing(people.filter((p) => selected.has(p.id)))}>
               <Mail size={15} /> Send reminder
             </Button>
             <button onClick={() => setSelected(new Set())} className="rounded-xl p-2 text-white/70 hover:bg-white/10 hover:text-white" aria-label="Clear">
@@ -218,11 +244,12 @@ export function PeopleTable({
 
       {composing && (
         <ReminderModal
-          people={people.filter((p) => selected.has(p.id))}
+          people={composing}
           reqs={reqs}
-          onClose={() => setComposing(false)}
+          senderName={senderName}
+          onClose={() => setComposing(null)}
           onSent={() => {
-            setComposing(false);
+            setComposing(null);
             setSelected(new Set());
           }}
         />
@@ -279,83 +306,109 @@ function Checkbox({ checked, onChange, label }: { checked: boolean; onChange: ()
   );
 }
 
+/** "Hey Lyndi! Don't forget to finish signing up for ..." — a draft they can change however they want */
+function draftFor(people: PersonProgress[], reqs: Reqs, senderName?: string) {
+  const one = people.length === 1 ? people[0] : null;
+  const first = one ? one.name.split(" ")[0] : "{name}";
+  const needs = one ? needsSentence(one.tally, reqs) : "{needs}";
+  const sign = senderName ? `\n\n${senderName.split(" ")[0]}` : "";
+  const body = needs
+    ? `Hey ${first}! Don't forget to finish signing up for ${needs}. Spots fill up fast, so grab a few this week!${sign}`
+    : `Hey ${first}! Just checking in. You're all set this semester, thanks for crushing it!${sign}`;
+  return { subject: needs ? "Quick reminder" : "Checking in", body };
+}
+
 function ReminderModal({
   people,
   reqs,
+  senderName,
   onClose,
   onSent,
 }: {
   people: PersonProgress[];
   reqs: Reqs;
+  senderName?: string;
   onClose: () => void;
   onSent: () => void;
 }) {
   const toast = useToast();
-  const [note, setNote] = useState("");
+  const [draft, setDraft] = useState(() => draftFor(people, reqs, senderName));
   const [pending, start] = useTransition();
-  const needing = people.filter((p) => needsSentence(p.tally, reqs));
-  const sample = needing[0];
+  const many = people.length > 1;
+  const usesNeeds = draft.body.includes("{needs}");
+  const going = usesNeeds ? people.filter((p) => needsSentence(p.tally, reqs)) : people;
+  const sample = going[0];
+  const fill = (t: string) =>
+    sample ? t.replace(/\{name\}/g, sample.name.split(" ")[0]).replace(/\{needs\}/g, needsSentence(sample.tally, reqs) || "everything you need") : t;
 
   return (
     <div className="fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Send reminder">
       <button className="anim-fade absolute inset-0 bg-ink/25" onClick={onClose} aria-label="Close" />
-      <div className="anim-sheet absolute inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto rounded-t-3xl bg-white p-6 shadow-pop md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[520px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
+      <div className="anim-sheet absolute inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto rounded-t-3xl bg-white p-6 shadow-pop md:inset-x-auto md:top-1/2 md:bottom-auto md:left-1/2 md:w-[540px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
         <div className="mb-5 flex items-center justify-between">
-          <p className="text-xl font-semibold text-ink">
-            Remind {needing.length} {needing.length === 1 ? "person" : "people"}
-          </p>
+          <p className="text-xl font-semibold text-ink">{many ? `Remind ${going.length} people` : `Remind ${people[0].name.split(" ")[0]}`}</p>
           <button onClick={onClose} className="rounded-full p-2 text-muted hover:bg-canvas" aria-label="Close">
             <X size={20} />
           </button>
         </div>
 
-        {sample ? (
-          <div className="rounded-2xl bg-canvas p-4 text-[15px] leading-relaxed text-ink-2">
-            <p>Hi {sample.name.split(" ")[0]},</p>
-            <p className="mt-2">You still need {needsSentence(sample.tally, reqs)} this semester.</p>
-            {note.trim() && <p className="mt-2 whitespace-pre-line">{note.trim()}</p>}
-            <p className="mt-3">
-              <span className="inline-block rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white">See open spots</span>
-            </p>
-          </div>
-        ) : (
-          <p className="rounded-2xl bg-canvas p-4 text-muted">Everyone selected is already fully signed up.</p>
-        )}
-
-        <label className="mt-5 block">
-          <span className="mb-1.5 block text-sm font-medium text-ink-2">Add a note (optional)</span>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            maxLength={1000}
-            className={inputClass + " h-auto py-2.5"}
-            placeholder="Tours fill up fast in November!"
+        <label className="block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-2">Subject</span>
+          <input
+            value={draft.subject}
+            onChange={(e) => setDraft({ ...draft, subject: e.target.value })}
+            maxLength={150}
+            className={inputClass}
           />
         </label>
-        {people.length > needing.length && (
-          <p className="mt-2 text-sm text-muted">{people.length - needing.length} already covered — they won&apos;t get an email.</p>
+        <label className="mt-4 block">
+          <span className="mb-1.5 block text-sm font-medium text-ink-2">Message</span>
+          <textarea
+            value={draft.body}
+            onChange={(e) => setDraft({ ...draft, body: e.target.value })}
+            rows={6}
+            maxLength={4000}
+            autoFocus
+            className={inputClass + " h-auto py-2.5 leading-relaxed"}
+          />
+        </label>
+        {many && (
+          <p className="mt-2 text-sm text-muted">
+            <code className="rounded bg-canvas px-1">{"{name}"}</code> and <code className="rounded bg-canvas px-1">{"{needs}"}</code> fill in for each
+            person.
+            {sample && (
+              <>
+                {" "}
+                For {sample.name.split(" ")[0]}: <span className="text-ink-2">“{fill(draft.body).split("\n")[0].slice(0, 140)}”</span>
+              </>
+            )}
+          </p>
+        )}
+        {people.length > going.length && (
+          <p className="mt-2 text-sm text-muted">{people.length - going.length} already covered — they won&apos;t get an email.</p>
         )}
 
         <Button
           size="lg"
           className="mt-5 w-full"
-          disabled={pending || needing.length === 0}
+          disabled={pending || going.length === 0 || !draft.body.trim()}
           onClick={() =>
             start(async () => {
               const r = await sendReminders(
-                needing.map((p) => p.id),
-                note,
+                going.map((p) => p.id),
+                "",
+                draft,
               );
               if (r.ok) {
-                toast(`Reminder sent to ${r.sent}`);
+                toast(r.sent === 1 && !many ? `Sent to ${people[0].name.split(" ")[0]}` : `Reminder sent to ${r.sent}`);
                 onSent();
               } else toast(r.error, "error");
             })
           }
         >
-          {pending ? "Sending…" : `Send to ${needing.length}`}
+          {pending ? "Sending…" : many ? `Send to ${going.length}` : "Send"}
         </Button>
+        <p className="mt-2 text-center text-xs text-muted">Replies come to your email</p>
       </div>
     </div>
   );

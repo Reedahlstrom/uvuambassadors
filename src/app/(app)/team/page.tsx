@@ -35,7 +35,7 @@ export default async function TeamPage() {
       ) : (
         <>
           <StatTiles people={people} />
-          <PeopleTable people={people} reqs={reqs} canRemind />
+          <PeopleTable people={people} reqs={reqs} canRemind senderName={user.name} />
         </>
       )}
     </div>

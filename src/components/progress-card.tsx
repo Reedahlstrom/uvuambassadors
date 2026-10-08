@@ -51,7 +51,7 @@ const ROWS = [
   { key: "tour", label: "Tours", color: "var(--color-tour)" },
   { key: "event", label: "Events", color: "var(--color-event)" },
   { key: "hs_visit", label: "High school visits", color: "var(--color-hs)" },
-  { key: "hs_visit_ac", label: "With an AC", color: "var(--color-hs)", sub: true },
+  { key: "hs_visit_ac", label: "Of those, with an AC", color: "var(--color-hs)", sub: true },
 ] as const;
 
 export function ProgressCard({
@@ -94,13 +94,12 @@ export function ProgressCard({
             <button
               key={r.key}
               onClick={() => onPick(pickType)}
-              title={`Show ${r.label.toLowerCase()} on the calendar`}
-              className={cx("group -mx-2 block w-[calc(100%+1rem)] rounded-xl px-2 py-1 text-left hover:bg-canvas", "sub" in r && r.sub && "pl-6")}
+              className={cx("group -mx-2 block w-[calc(100%+1rem)] rounded-xl px-2 py-1 text-left hover:bg-canvas", "sub" in r && r.sub && "ml-1 w-[calc(100%+0.25rem)] border-l-2 border-line pl-3")}
             >
               {body}
             </button>
           ) : (
-            <div key={r.key} className={cx("sub" in r && r.sub && "pl-4")}>
+            <div key={r.key} className={cx("sub" in r && r.sub && "ml-1 border-l-2 border-line pl-3")}>
               {body}
             </div>
           );
@@ -124,7 +123,7 @@ export function ProgressStrip({ tally, reqs, status }: { tally: Tally; reqs: Req
               <p className="text-[15px]">
                 <DoneCount done={t.done} scheduled={t.scheduled} need={reqs[r.key]} color={r.color} />
               </p>
-              <p className="truncate text-[11px] text-muted">{r.key === "hs_visit" ? "HS visits" : r.key === "hs_visit_ac" ? "With AC" : r.label}</p>
+              <p className="truncate text-[11px] text-muted">{r.key === "hs_visit" ? "HS visits" : r.key === "hs_visit_ac" ? "Of those, AC" : r.label}</p>
               <div className="mt-1.5">
                 <Bar value={t.done} soft={t.scheduled} max={reqs[r.key]} color={r.color} />
               </div>

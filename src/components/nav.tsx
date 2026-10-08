@@ -12,7 +12,7 @@ type Role = "ambassador" | "manager" | "admin";
 const items = [
   { href: "/signup", label: "Sign up", icon: CirclePlus, roles: ["ambassador", "manager", "admin"] },
   { href: "/calendar", label: "Calendar", icon: CalendarDays, roles: ["ambassador", "manager", "admin"] },
-  { href: "/my", label: "My shifts", icon: CircleCheck, roles: ["ambassador", "manager", "admin"] },
+  { href: "/my", label: "My events", icon: CircleCheck, roles: ["ambassador", "manager", "admin"] },
   { href: "/team", label: "My team", icon: Users, roles: ["manager"] },
   { href: "/admin", label: "Admin", icon: LayoutDashboard, roles: ["admin"] },
 ] as const;

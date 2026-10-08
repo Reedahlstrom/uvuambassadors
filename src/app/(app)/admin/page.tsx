@@ -14,7 +14,7 @@ import { dateShort, timeShort } from "@/lib/dates";
 export const metadata: Metadata = { title: "Admin" };
 
 export default async function AdminOverview() {
-  await requireRole("admin");
+  const user = await requireRole("admin");
   const semester = await getSemester();
   const reqs = reqsOf(semester);
   const [people, teams] = await Promise.all([getProgress(), getTeams()]);
@@ -75,7 +75,7 @@ export default async function AdminOverview() {
             <Download size={15} /> Export CSV
           </a>
         </div>
-        <PeopleTable people={people} reqs={reqs} showTeam teams={teams} canRemind />
+        <PeopleTable people={people} reqs={reqs} showTeam teams={teams} canRemind senderName={user.name} />
       </section>
     </div>
   );

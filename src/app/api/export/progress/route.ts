@@ -21,7 +21,10 @@ export async function GET() {
     "Email",
     "Team",
     "Status",
-    ...REQ_KEYS.flatMap((k) => [`${REQ_LABEL[k]} done`, `${REQ_LABEL[k]} signed up`, `${REQ_LABEL[k]} needed`]),
+    ...REQ_KEYS.flatMap((k) => {
+      const l = k === "hs_visit_ac" ? "HS visits with AC (part of HS visits)" : REQ_LABEL[k];
+      return [`${l} done`, `${l} signed up`, `${l} needed`];
+    }),
     "Next shift",
   ];
   const rows = people.map((p) => [

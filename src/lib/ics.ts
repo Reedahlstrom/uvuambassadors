@@ -1,6 +1,6 @@
-// Minimal iCalendar writer for the personal "my shifts" feed.
+// Minimal iCalendar writer for the personal "my events" feed.
 
-const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\;");
+const esc = (s: string) => s.replace(/\\/g, "\\\\").replace(/\r\n|\r|\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
 const stamp = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
 const dateOnly = (d: Date) => stamp(d).slice(0, 8);
 
@@ -30,7 +30,7 @@ export function buildIcs(name: string, events: IcsEvent[]) {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//UVU Ambassadors//Shifts//EN",
+    "PRODID:-//UVU Ambassadors//Events//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
     `X-WR-CALNAME:${esc(name)}`,

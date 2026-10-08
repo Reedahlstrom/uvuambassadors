@@ -66,7 +66,7 @@ export function SettingsForms({
                   ["reqTours", "Tours"],
                   ["reqEvents", "Events"],
                   ["reqHsVisits", "HS visits"],
-                  ["reqHsVisitsAc", "…with an AC"],
+                  ["reqHsVisitsAc", "Of those, with an AC"],
                 ] as const
               ).map(([k, label]) => (
                 <label key={k} className="rounded-xl border border-line px-3 py-2.5">

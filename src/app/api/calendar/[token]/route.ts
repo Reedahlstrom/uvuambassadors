@@ -21,7 +21,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ token: string 
 
   const base = await baseUrl();
   const ics = buildIcs(
-    "UVU Ambassador shifts",
+    "UVU Ambassador events",
     rows.map(({ event: e }) => ({
       uid: `${e.id}@uvuambassadors`,
       title: e.title,
@@ -36,7 +36,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ token: string 
   return new Response(ics, {
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
-      "Content-Disposition": 'inline; filename="uvu-ambassador-shifts.ics"',
+      "Content-Disposition": 'inline; filename="uvu-ambassador-events.ics"',
       "Cache-Control": "no-store",
     },
   });

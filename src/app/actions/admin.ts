@@ -108,7 +108,7 @@ async function tellSignedUp(
       subject,
       heading,
       lines,
-      button: { label: "My shifts", url: `${APP_URL}/my` },
+      button: { label: "My events", url: `${APP_URL}/my` },
     })),
   );
 }
@@ -147,7 +147,7 @@ export async function moveEvent(id: string, day: string): Promise<ActionResult> 
     admin.id,
     `New date: ${event.title}`,
     "The date changed",
-    [`${event.title} is now ${when}.`, "You're still signed up. If you can't make it, drop it in My shifts."],
+    [`${event.title} is now ${when}.`, "You're still signed up. If you can't make it, drop it in My events."],
   );
   refresh();
   return { ok: true, message: told ? `Moved · emailed ${told} signed up` : "Moved" };

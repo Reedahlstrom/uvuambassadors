@@ -6,7 +6,7 @@ import { Button, inputClass } from "@/components/ui";
 
 const DEMO_LABEL = { ambassador: ["Reed", "Ambassador"], manager: ["Javi", "Manager"], admin: ["Program", "Admin"] } as const;
 
-export function LoginForm({ demo, expired }: { demo: boolean; expired: boolean }) {
+export function LoginForm({ demo, expired, microsoft, msError }: { demo: boolean; expired: boolean; microsoft: boolean; msError?: string }) {
   const [emailState, sendCode, sending] = useActionState<LoginState, FormData>(requestLogin, { step: "email" });
   const [codeState, checkCode, checking] = useActionState<LoginState, FormData>(verifyCode, { step: "code" });
   const [demoPending, startDemo] = useTransition();
@@ -52,6 +52,21 @@ export function LoginForm({ demo, expired }: { demo: boolean; expired: boolean }
 
   return (
     <div className="space-y-6">
+      {microsoft && (
+        <div className="space-y-4">
+          <a
+            href="/auth/microsoft"
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-xl border border-line bg-white text-[15px] font-semibold text-ink shadow-soft hover:bg-canvas"
+          >
+            <MicrosoftLogo /> Sign in with Microsoft
+          </a>
+          {msError && <p className="text-sm text-bad">{msError}</p>}
+          <div className="flex items-center gap-3 text-xs text-muted">
+            <span className="h-px flex-1 bg-line" /> or get a code by email <span className="h-px flex-1 bg-line" />
+          </div>
+        </div>
+      )}
+      {!microsoft && msError && <p className="text-sm text-bad">{msError}</p>}
       <form action={sendCode} className="space-y-4">
         <label className="block">
           <span className="mb-1.5 block text-[15px] font-medium text-ink">Your UVU email</span>
@@ -94,5 +109,16 @@ export function LoginForm({ demo, expired }: { demo: boolean; expired: boolean }
         </div>
       )}
     </div>
+  );
+}
+
+function MicrosoftLogo() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden>
+      <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+      <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+      <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+      <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+    </svg>
   );
 }
