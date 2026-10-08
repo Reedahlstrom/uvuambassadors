@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------
+   Design tokens — change colors here and the whole app follows.
+   (UVU green, white and grey)
+------------------------------------------------------------------- */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+
+  --color-ink: #1c211e;
+  --color-ink-2: #3f4541;
+  --color-muted: #6c726e;
+  --color-faint: #a0a5a2;
+  --color-line: #e6e8e6;
+  --color-canvas: #f6f7f6;
+
+  --color-brand: #275d38;
+  --color-brand-hover: #1d4a2b;
+  --color-brand-bright: #3a8a52;
+  --color-brand-soft: #e8f1eb;
+  --color-brand-soft-hover: #d9e8dd;
+
+  --color-tour: #275d38;
+  --color-event: #7a4cf0;
+  --color-hs: #0b9c86;
+  --color-cal: #8e9490;
+
+  --color-good: #0f9d58;
+  --color-good-soft: #e3f6ec;
+  --color-warn: #c26a00;
+  --color-warn-soft: #fff1dc;
+  --color-bad: #d03b3b;
+  --color-bad-soft: #fde8e8;
+
+  --shadow-soft: 0 1px 2px rgb(28 33 30 / 0.04), 0 4px 16px rgb(28 33 30 / 0.05);
+  --shadow-pop: 0 10px 40px rgb(28 33 30 / 0.16), 0 2px 6px rgb(28 33 30 / 0.06);
+}
+
+:root {
+  --c-tour: var(--color-tour);
+  --c-event: var(--color-event);
+  --c-hs: var(--color-hs);
+  --c-cal: var(--color-cal);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+@utility font-display {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+
+/* Soft green glow used on sign-in and welcome screens */
+@utility hero-glow {
+  background:
+    radial-gradient(60% 55% at 50% 45%, rgb(39 93 56 / 0.92) 0%, rgb(58 138 82 / 0.6) 35%, rgb(150 190 160 / 0.35) 65%, rgb(246 247 246 / 0) 100%),
+    linear-gradient(180deg, #eef1ef 0%, #f6f7f6 100%);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-bright);
+  outline-offset: 2px;
+}
+
+/* Thin scrollbars inside panels */
+@utility thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #d6d9d7 transparent;
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes panel-in {
+  from { transform: translateX(24px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@utility anim-sheet {
+  animation: sheet-in 0.22s ease-out;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+@utility anim-panel {
+  animation: panel-in 0.22s ease-out;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}
+@utility anim-fade {
+  animation: fade-in 0.18s ease-out;
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "uvu-ambassadors",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predev": "tsx scripts/ensure-db.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:reset": "tsx scripts/reset.ts",
+    "db:admin": "tsx scripts/create-admin.ts",
+    "vercel-build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then tsx scripts/migrate.ts; fi && next build",
+    "test:smoke": "playwright test"
+  },
+  "dependencies": {
+    "@date-fns/tz": "^1.5.0",
+    "@electric-sql/pglite": "^0.5.8",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource/instrument-serif": "^5.3.0",
+    "date-fns": "^4.4.0",
+    "drizzle-orm": "^0.45.3",
+    "jose": "^6.2.12",
+    "lucide-react": "^1.52.0",
+    "next": "^16.4.0",
+    "node-ical": "^0.27.3",
+    "papaparse": "^5.7.0",
+    "postgres": "^3.4.9",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "resend": "^6.32.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22",
+    "@types/papaparse": "^5.3.15",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.11",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9"
+  }
+}

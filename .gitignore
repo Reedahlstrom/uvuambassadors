@@ -1,0 +1,13 @@
+node_modules
+.next
+.data
+.env
+.env.local
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+.data-test
+test-results
+playwright-report
+.data-real
+data-private
