@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "uvuambassadors",
+  // worker.ts = the OpenNext app + the daily cron job
+  "main": "worker.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "uvuambassadors" }],
+  // Postgres connection pooler. Create with:
+  //   npx wrangler hyperdrive create uvuambassadors-db --connection-string="<DATABASE_URL>"
+  // and paste the id here.
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
+  // 14:00 UTC = 8am Utah (MDT) / 7am (MST)
+  "triggers": { "crons": ["0 14 * * *"] },
+  "routes": [
+    { "pattern": "uvuambassadors.com", "custom_domain": true },
+    { "pattern": "www.uvuambassadors.com", "custom_domain": true }
+  ],
+  "vars": {
+    "APP_URL": "https://uvuambassadors.com",
+    "EMAIL_FROM": "UVU Ambassadors <hello@uvuambassadors.com>"
+  }
+  // Secrets (npx wrangler secret put NAME): DATABASE_URL, AUTH_SECRET, CRON_SECRET, RESEND_API_KEY
+}

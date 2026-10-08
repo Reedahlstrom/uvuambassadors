@@ -19,6 +19,8 @@ Sign-up + calendar app for ~40 ambassadors, 6 managers, 4 admins. Replaces SignU
 - `npm run test:smoke` — Playwright walk-through of every role on a throwaway database (`.data-test`). Stop `npm run dev` first (Next allows one dev server per project). First time: `npx playwright install chromium`
 - `npm run db:generate` after editing `src/lib/db/schema.ts`, then `npm run db:migrate`
 - `npm run db:reset` — wipes only the local demo database
+- `npm run cf:deploy` — build with OpenNext and deploy to Cloudflare Workers (`wrangler.jsonc`, `worker.ts` = app + daily cron). Postgres goes through Hyperdrive (binding `HYPERDRIVE`); on Workers `getDb()` opens one connection per request.
+- Real data: `PGLITE_DIR=.data-real npm run dev` locally; `scripts/import-signupgenius.ts` loads `data-private/` (gitignored — real names, never commit)
 
 ## Architecture
 - Next.js 16 App Router, Server Components, Server Actions. **Not** using `cacheComponents`; pages are dynamic (they read the session cookie). After a mutation call `revalidatePath("/", "layout")`.

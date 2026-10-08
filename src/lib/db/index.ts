@@ -46,9 +46,27 @@ function createRemoteDb(): DB {
   return drizzlePostgres(client, { schema });
 }
 
+// Cloudflare Workers can't share a connection between requests, so there we open one
+// per request through Hyperdrive (Cloudflare's connection pooler in front of Postgres).
+const onWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+const perRequest = new WeakMap<object, DB>();
+
+async function getWorkersDb(): Promise<DB> {
+  const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+  const { env, ctx } = await getCloudflareContext({ async: true });
+  let db = perRequest.get(ctx);
+  if (!db) {
+    const url = (env as { HYPERDRIVE?: { connectionString: string } }).HYPERDRIVE?.connectionString ?? process.env.DATABASE_URL!;
+    db = drizzlePostgres(postgres(url, { max: 1, prepare: false, fetch_types: false }), { schema });
+    perRequest.set(ctx, db);
+  }
+  return db;
+}
+
 let pending: Promise<DB> | null = null;
 
 export async function getDb(): Promise<DB> {
+  if (onWorkers) return getWorkersDb();
   if (globalForDb.__db) return globalForDb.__db;
   if (!pending) {
     pending = (usingLocalDb ? createLocalDb() : Promise.resolve(createRemoteDb())).then((db) => {

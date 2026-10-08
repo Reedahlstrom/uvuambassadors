@@ -13,14 +13,17 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:reset": "tsx scripts/reset.ts",
     "db:admin": "tsx scripts/create-admin.ts",
-    "vercel-build": "if [ \"$VERCEL_ENV\" = \"production\" ]; then tsx scripts/migrate.ts; fi && next build",
-    "test:smoke": "playwright test"
+    "test:smoke": "playwright test",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "postinstall": "patch-package"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
     "@electric-sql/pglite": "^0.5.8",
     "@fontsource-variable/inter": "^5.3.0",
     "@fontsource/instrument-serif": "^5.3.0",
+    "@opennextjs/cloudflare": "^1.20.9",
     "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.3",
     "jose": "^6.2.12",
@@ -43,8 +46,10 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.11",
+    "patch-package": "^8.0.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
-    "typescript": "^5.9"
+    "typescript": "^5.9",
+    "wrangler": "^4.148.0"
   }
 }

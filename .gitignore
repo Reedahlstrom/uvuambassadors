@@ -11,3 +11,6 @@ test-results
 playwright-report
 .data-real
 data-private
+.open-next
+.wrangler
+.dev.vars
