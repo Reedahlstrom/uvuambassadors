@@ -34,6 +34,7 @@ const ROLES = [
       "Only shows shifts that still have open spots",
       "Shows how many spots are left and what still counts toward requirements",
       "Progress for tours, events and high school visits always on screen",
+      "Add any event to Outlook, Google or Apple Calendar",
       "Works on any phone, nothing to install",
     ],
     img: { src: "/landing/student.webp", w: 2880, h: 1800, alt: "Sign up page for an ambassador" },
@@ -43,9 +44,10 @@ const ROLES = [
     who: "Managers",
     title: "Know who's behind",
     points: [
-      "Every person on your team with their progress and status",
+      "Everyone on your team with their progress, status and next shift",
       "Filter to Behind or No sign-ups",
-      "Select people and email them a reminder",
+      "Remind one person or the whole group with an email you can edit",
+      "Mark no-shows for your team",
     ],
     img: { src: "/landing/manager.webp", w: 2880, h: 1800, alt: "Team page for a manager" },
   },
@@ -55,8 +57,8 @@ const ROLES = [
     points: [
       "Who's behind, on track or done, across every team",
       "Shifts in the next two weeks that still need people",
-      "Add events and weekly tours, import the roster, move people between teams",
-      "Add or remove people from a shift and mark no-shows",
+      "Drag an event to a new day and everyone signed up gets an email",
+      "Import the roster, move people between teams, export everyone's progress to CSV",
     ],
     img: { src: "/landing/admin.webp", w: 2880, h: 1800, alt: "Admin overview" },
   },
@@ -124,12 +126,12 @@ export default async function Home() {
                 loop
                 playsInline
                 preload="metadata"
-                aria-label="An ambassador signs up for a campus tour, then checks My shifts and the calendar"
+                aria-label="An ambassador signs up for a campus tour, then checks My events and the calendar"
               />
             </div>
           </div>
           <p className="mt-4 text-[14px] text-muted">
-            An ambassador signs up for a tour in two clicks. It's on their shifts and calendar right away.
+            An ambassador signs up for a tour in two clicks. It shows up in My events and on the calendar right away.
           </p>
         </div>
       </section>
@@ -212,7 +214,7 @@ export default async function Home() {
           ))}
         </div>
         <ul className="mt-8 grid gap-3 text-[15px] text-ink-2 sm:grid-cols-3">
-          {["Live at uvuambassadors.com", "Sign in with a one-time email code, no passwords", "Each role only sees what it needs"].map((t) => (
+          {["Live at uvuambassadors.com", "Sign in with your email, no passwords", "Each role only sees what it needs"].map((t) => (
             <li key={t} className="flex gap-2.5">
               <Check size={18} className="mt-0.5 shrink-0 text-brand" />
               {t}
