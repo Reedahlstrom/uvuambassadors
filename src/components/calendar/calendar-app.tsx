@@ -785,13 +785,13 @@ export function EventRow({ e, me, now, onClick }: { e: CalEvent; me: string; now
           <span className="line-clamp-2 block text-[15px] leading-snug font-semibold text-ink sm:truncate">{e.title}</span>
           <span className="flex flex-wrap items-center gap-x-1.5 text-[13px] text-muted sm:flex-nowrap sm:truncate">
             {meta.short}
-            {e.withAc && <span className="font-medium text-hs">· With AC</span>}
+            {e.withAc && <span className="shrink-0 font-medium text-hs">· With AC</span>}
             {!mine && !past && takesSignups(e) && left > 0 && (
               <span className="shrink-0 font-medium text-brand">
                 · {left} {left === 1 ? "spot" : "spots"} left
               </span>
             )}
-            {e.location && e.location !== e.title && <span className="truncate">· {e.location}</span>}
+            {e.location && e.location !== e.title && <span className="max-w-full truncate">· {e.location}</span>}
           </span>
         </span>
       </button>

@@ -45,6 +45,20 @@ function outlookFixture() {
 test("ambassador, manager and admin flows", async ({ browser, request }) => {
   const errors: string[] = [];
 
+  // ---------- Landing page (signed out) ----------
+  let ctx = await browser.newContext();
+  let page = await ctx.newPage();
+  page.on("pageerror", (e) => errors.push(String(e)));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Ambassador scheduling in one place" })).toBeVisible();
+  await expect(page.getByText("A product of Alta Labs LLC").first()).toBeVisible();
+  for (const src of await page.locator("img, video").evaluateAll((els) => els.map((e) => e.getAttribute("src")!))) {
+    expect((await request.get(src)).status(), src).toBe(200);
+  }
+  await page.locator("header").getByRole("link", { name: "Sign in" }).click();
+  await page.waitForURL("**/login");
+  await ctx.close();
+
   const enter = async (p: Page, first: string, last: string, email: string) => {
     await p.goto("/login");
     await p.fill("input[name=firstName]", first);
@@ -54,8 +68,8 @@ test("ambassador, manager and admin flows", async ({ browser, request }) => {
   };
 
   // ---------- Manager: name + email, then a code ----------
-  let ctx = await browser.newContext();
-  let page = await ctx.newPage();
+  ctx = await browser.newContext();
+  page = await ctx.newPage();
   page.on("pageerror", (e) => errors.push(String(e)));
   await enter(page, "Javi", "M", "Javi@example.com");
   const hint = await page.getByText("Your code is").innerText();
