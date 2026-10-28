@@ -64,12 +64,6 @@ const ROLES = [
   },
 ];
 
-const STATS = [
-  ["94", "sign-up slots moved from SignUpGenius"],
-  ["265", "existing sign-ups carried over"],
-  ["55", "ambassadors, managers and admins loaded"],
-];
-
 export default async function Home() {
   if (await getCurrentUser()) redirect("/signup");
 
@@ -202,28 +196,7 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-        <h2 className="font-display text-[38px] leading-none sm:text-[52px]">Ready for this semester</h2>
-        <p className="mt-3 max-w-2xl text-[17px] text-muted">Fall 2026 is already loaded from the current SignUpGenius sheets.</p>
-        <div className="mt-10 grid gap-4 sm:grid-cols-3">
-          {STATS.map(([n, label]) => (
-            <div key={label} className="rounded-2xl border border-line p-6">
-              <p className="font-display text-[56px] leading-none text-brand">{n}</p>
-              <p className="mt-2 text-[15px] text-muted">{label}</p>
-            </div>
-          ))}
-        </div>
-        <ul className="mt-8 grid gap-3 text-[15px] text-ink-2 sm:grid-cols-3">
-          {["Live at uvuambassadors.com", "Sign in with your email, no passwords", "Each role only sees what it needs"].map((t) => (
-            <li key={t} className="flex gap-2.5">
-              <Check size={18} className="mt-0.5 shrink-0 text-brand" />
-              {t}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <footer className="border-t border-line">
+      <footer>
         <div className="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-8 text-[14px] text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>UVU Ambassadors is a product of Alta Labs LLC.</p>
           <p>© 2026 Alta Labs LLC</p>
